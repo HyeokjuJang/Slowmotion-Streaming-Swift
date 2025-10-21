@@ -129,6 +129,13 @@ class WebRTCCameraManager: NSObject {
         print("✅ WebRTC Camera setup complete: \(fps)fps @ \(Int(resolution.width))x\(Int(resolution.height))")
     }
 
+    // MARK: - Update Video Capturer
+
+    func updateVideoCapturer(_ videoCapturer: RTCVideoCapturer?) {
+        self.videoCapturer = videoCapturer
+        print("✅ Video capturer updated")
+    }
+
     // MARK: - Format Selection
 
     private func findBestFormat(for device: AVCaptureDevice, fps: Int32, resolution: CGSize) -> AVCaptureDevice.Format? {

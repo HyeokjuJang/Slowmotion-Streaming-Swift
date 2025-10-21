@@ -70,6 +70,12 @@ class WebRTCManager: NSObject {
     // MARK: - Peer Connection Setup
 
     func setupPeerConnection() {
+        // 기존 연결이 있으면 먼저 정리
+        if let existingConnection = peerConnection {
+            existingConnection.close()
+            print("🔄 Closing existing peer connection")
+        }
+
         let config = RTCConfiguration()
         config.iceServers = [
             RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"]),

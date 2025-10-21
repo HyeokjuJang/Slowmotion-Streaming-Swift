@@ -151,6 +151,19 @@ extension WebRTCViewController: WebSocketManagerDelegate {
     func webSocketDidConnect() {
         connectionStatus = "연결됨"
 
+        // WebRTC Peer Connection 재설정 (재연결 대비)
+        webRTCManager.setupPeerConnection()
+
+        // Video Capturer 재생성 및 업데이트 (재연결 시 videoSource가 새로 생성되므로)
+        if cameraManager != nil {
+            let capturer = webRTCManager.setupCapturer(
+                fps: settings.recordingFPS,
+                width: Int32(settings.recordingResolution.width),
+                height: Int32(settings.recordingResolution.height)
+            )
+            cameraManager?.updateVideoCapturer(capturer)
+        }
+
         // WebRTC Offer 생성
         webRTCManager.createOffer()
 
