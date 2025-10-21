@@ -99,17 +99,20 @@ class ImageProcessor {
         // 리사이징
         let resizedImage = resize(ciImage: ciImage, to: targetSize)
 
-        // CIContext로 바로 JPEG 생성 (UIImage 거치지 않음 - 더 빠름!)
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let options: [CIImageRepresentationOption: Any] = [
-            .jpegCompressionQuality: quality
-        ]
+        // CGImage로 변환 후 JPEG 생성
+        guard let cgImage = context.createCGImage(resizedImage, from: resizedImage.extent) else {
+            return nil
+        }
 
-        return context.jpegRepresentation(
-            of: resizedImage,
-            colorSpace: colorSpace,
-            options: options
-        )
+        // UIGraphicsImageRenderer 사용 (최적화된 JPEG 생성)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: resizedImage.extent.size, format: format)
+
+        return renderer.jpegData(withCompressionQuality: quality) { context in
+            let uiImage = UIImage(cgImage: cgImage)
+            uiImage.draw(at: .zero)
+        }
     }
 
     // MARK: - Frame Downsampling
@@ -135,21 +138,20 @@ class ImageProcessor {
         quality: CGFloat,
         completion: @escaping (Data?) -> Void
     ) {
-        // CMSampleBuffer에서 PixelBuffer 추출 (Swift 6 concurrency 대응)
+        // CMSampleBuffer에서 PixelBuffer 추출
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             completion(nil)
             return
         }
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            autoreleasepool {
-                let jpegData = self.jpegDataFromPixelBuffer(
-                    pixelBuffer,
-                    targetSize: targetSize,
-                    quality: quality
-                )
-                completion(jpegData)
-            }
+        // 동기적으로 처리 (Swift 6 concurrency 경고 회피)
+        autoreleasepool {
+            let jpegData = self.jpegDataFromPixelBuffer(
+                pixelBuffer,
+                targetSize: targetSize,
+                quality: quality
+            )
+            completion(jpegData)
         }
     }
 }
