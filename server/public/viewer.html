@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SlowMotion Camera Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-start {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #b91c1c;
+        }
+
+        .btn-stop {
+            background: #4b5563;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #374151;
+        }
+
+        .status {
+            padding: 15px 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .status-text {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-connected {
+            background: #10b981;
+        }
+
+        .status-disconnected {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .video-container {
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #preview {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .placeholder {
+            color: #666;
+            font-size: 18px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📹 SlowMotion Camera Viewer</h1>
+
+        <div class="status">
+            <div class="status-text">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">연결 대기 중...</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-start" onclick="sendCommand('start')">🔴 녹화 시작</button>
+            <button class="btn-stop" onclick="sendCommand('stop')">⏹ 녹화 종료</button>
+        </div>
+
+        <div class="video-container">
+            <img id="preview" style="display: none;">
+            <div class="placeholder" id="placeholder">카메라 스트림을 기다리는 중...</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">카메라 상태</div>
+                <div class="stat-value" id="cameraStatus">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">프레임 수신</div>
+                <div class="stat-value" id="frameCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">FPS</div>
+                <div class="stat-value" id="fps">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">연결 시간</div>
+                <div class="stat-value" id="uptime">00:00</div>
+            </div>
+        </div>
+
+        <div class="log" id="log">
+            <div class="log-entry">로그 시작...</div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let frameCount = 0;
+        let lastFrameTime = Date.now();
+        let fpsCounter = 0;
+        let connectionTime = null;
+
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const preview = document.getElementById('preview');
+        const placeholder = document.getElementById('placeholder');
+        const cameraStatusEl = document.getElementById('cameraStatus');
+        const frameCountEl = document.getElementById('frameCount');
+        const fpsEl = document.getElementById('fps');
+        const uptimeEl = document.getElementById('uptime');
+        const logEl = document.getElementById('log');
+
+        function connect() {
+            const wsUrl = `ws://${window.location.hostname}:8080/viewer`;
+            log(`연결 시도: ${wsUrl}`);
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                log('✅ WebSocket 연결됨');
+                statusIndicator.className = 'status-indicator status-connected';
+                statusText.textContent = '연결됨';
+                connectionTime = Date.now();
+            };
+
+            ws.onmessage = (event) => {
+                if (event.data instanceof Blob) {
+                    // 비디오 프레임 (JPEG 이미지)
+                    const url = URL.createObjectURL(event.data);
+                    preview.src = url;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+
+                    frameCount++;
+                    frameCountEl.textContent = frameCount;
+
+                    // FPS 계산
+                    fpsCounter++;
+                    const now = Date.now();
+                    const elapsed = (now - lastFrameTime) / 1000;
+                    if (elapsed >= 1.0) {
+                        const fps = Math.round(fpsCounter / elapsed);
+                        fpsEl.textContent = fps;
+                        fpsCounter = 0;
+                        lastFrameTime = now;
+                    }
+                } else {
+                    // JSON 메시지 (상태 등)
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'camera_status') {
+                            cameraStatusEl.textContent = data.status;
+                            log(`📊 카메라 상태: ${data.status}`);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse message:', e);
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                log('⚠️ WebSocket 연결 종료');
+                statusIndicator.className = 'status-indicator status-disconnected';
+                statusText.textContent = '연결 끊김';
+
+                // 재연결 시도
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (error) => {
+                log(`❌ WebSocket 오류: ${error.message || 'Unknown error'}`);
+            };
+        }
+
+        function sendCommand(command) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ command }));
+                log(`📤 명령 전송: ${command}`);
+            } else {
+                log('⚠️ WebSocket이 연결되지 않음');
+            }
+        }
+
+        function log(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateUptime() {
+            if (connectionTime) {
+                const elapsed = Math.floor((Date.now() - connectionTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                uptimeEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+        }
+
+        // 자동 연결
+        connect();
+
+        // Uptime 업데이트
+        setInterval(updateUptime, 1000);
+    </script>
+</body>
+</html>
