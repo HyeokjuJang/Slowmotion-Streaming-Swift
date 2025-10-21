@@ -15,12 +15,12 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0")
+        // Dependencies are now managed via CocoaPods
     ],
     targets: [
         .target(
             name: "SlowMotionCamera",
-            dependencies: ["Starscream"],
+            dependencies: [],
             path: "SlowMotionCamera"
         )
     ]

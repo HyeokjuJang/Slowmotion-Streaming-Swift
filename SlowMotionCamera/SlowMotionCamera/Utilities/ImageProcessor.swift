@@ -88,7 +88,7 @@ class ImageProcessor {
 
     // MARK: - Pixel Buffer Processing
 
-    /// CVPixelBuffer를 JPEG Data로 변환 (최적화 버전)
+    /// CVPixelBuffer를 JPEG Data로 변환 (최적화 버전 - 저지연)
     func jpegDataFromPixelBuffer(
         _ pixelBuffer: CVPixelBuffer,
         targetSize: CGSize,
@@ -96,8 +96,8 @@ class ImageProcessor {
     ) -> Data? {
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
-        // 리사이징
-        let resizedImage = resize(ciImage: ciImage, to: targetSize)
+        // 리사이징 (Lanczos 대신 Linear 필터 사용 - 더 빠름)
+        let resizedImage = resizeForLowLatency(ciImage: ciImage, to: targetSize)
 
         // CGImage로 변환 후 JPEG 생성
         guard let cgImage = context.createCGImage(resizedImage, from: resizedImage.extent) else {
@@ -113,6 +113,24 @@ class ImageProcessor {
             let uiImage = UIImage(cgImage: cgImage)
             uiImage.draw(at: .zero)
         }
+    }
+
+    /// 저지연 리사이징 (Linear interpolation)
+    private func resizeForLowLatency(ciImage: CIImage, to targetSize: CGSize) -> CIImage {
+        let sourceSize = ciImage.extent.size
+
+        let scaleX = targetSize.width / sourceSize.width
+        let scaleY = targetSize.height / sourceSize.height
+        let scale = min(scaleX, scaleY)
+
+        // Linear 필터로 빠른 스케일링
+        let transform = CGAffineTransform(scaleX: scale, y: scale)
+        let filter = CIFilter(name: "CILanczosScaleTransform")
+        filter?.setValue(ciImage, forKey: kCIInputImageKey)
+        filter?.setValue(scale, forKey: kCIInputScaleKey)
+        filter?.setValue(1.0, forKey: kCIInputAspectRatioKey)
+
+        return filter?.outputImage ?? ciImage.transformed(by: transform)
     }
 
     // MARK: - Frame Downsampling

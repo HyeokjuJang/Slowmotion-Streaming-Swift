@@ -55,19 +55,29 @@ function handleCameraConnection(ws) {
     console.log(`📱 Camera connected: ${id}`);
 
     ws.on('message', (message) => {
-        if (message instanceof Buffer) {
-            // 비디오 프레임 → 모든 뷰어에게 전달
-            const frameSize = message.length;
-            viewers.forEach((viewer) => {
-                if (viewer.readyState === WebSocket.OPEN) {
-                    viewer.send(message);
-                }
-            });
-            // console.log(`📹 Frame relayed: ${frameSize} bytes to ${viewers.size} viewers`);
-        } else {
+        // 모든 메시지를 Buffer로 변환
+        const messageBuffer = Buffer.isBuffer(message) ? message : Buffer.from(message);
+
+        // JSON 파싱 시도
+        try {
+            const messageStr = messageBuffer.toString('utf8');
+            const data = JSON.parse(messageStr);
+
+            console.log(`📥 Camera JSON message: ${data.type || data.status || 'unknown'}`);
+
+            // WebRTC 시그널링 메시지 (offer, answer, ice)
+            if (data.type === 'offer' || data.type === 'answer' || data.type === 'ice') {
+                console.log(`📡 WebRTC signaling from camera: ${data.type}`);
+
+                // 모든 뷰어에게 시그널링 전달
+                viewers.forEach((viewer) => {
+                    if (viewer.readyState === WebSocket.OPEN) {
+                        viewer.send(messageStr);
+                    }
+                });
+            }
             // 상태 메시지
-            try {
-                const data = JSON.parse(message.toString());
+            else if (data.status) {
                 console.log(`📊 Camera ${id} status: ${data.status}`);
 
                 // 뷰어에게도 상태 전달
@@ -80,8 +90,20 @@ function handleCameraConnection(ws) {
                         }));
                     }
                 });
-            } catch (error) {
+            }
+        } catch (error) {
+            // JSON 파싱 실패 = 비디오 프레임 (바이너리)
+            if (messageBuffer.length > 1000) {
+                // 비디오 프레임 → 모든 뷰어에게 전달
+                viewers.forEach((viewer) => {
+                    if (viewer.readyState === WebSocket.OPEN) {
+                        viewer.send(messageBuffer);
+                    }
+                });
+                // console.log(`📹 Frame relayed: ${messageBuffer.length} bytes`);
+            } else {
                 console.error('Failed to parse message:', error);
+                console.error('Message was:', messageBuffer.toString().substring(0, 500));
             }
         }
     });
@@ -105,10 +127,23 @@ function handleViewerConnection(ws) {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message.toString());
-            console.log(`📩 Viewer ${id} command:`, data);
 
-            // 뷰어에서 카메라로 명령 전달
-            if (data.command) {
+            // WebRTC 시그널링 메시지 (answer, ice from viewer)
+            if (data.type === 'answer' || data.type === 'ice') {
+                console.log(`📡 WebRTC signaling from viewer: ${data.type}`);
+
+                // 카메라에게 시그널링 전달
+                cameras.forEach((camera) => {
+                    if (camera.readyState === WebSocket.OPEN) {
+                        camera.send(message.toString());
+                    }
+                });
+            }
+            // 제어 명령
+            else if (data.command) {
+                console.log(`📩 Viewer ${id} command:`, data.command);
+
+                // 뷰어에서 카메라로 명령 전달
                 cameras.forEach((camera) => {
                     if (camera.readyState === WebSocket.OPEN) {
                         camera.send(JSON.stringify({ command: data.command }));

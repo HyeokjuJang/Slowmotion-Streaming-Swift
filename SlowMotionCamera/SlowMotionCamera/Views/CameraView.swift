@@ -227,6 +227,11 @@ extension CameraViewController: WebSocketManagerDelegate {
             print("⚠️ Unknown command: \(command)")
         }
     }
+
+    func webSocketDidReceiveSignaling(_ message: SignalingMessage) {
+        print("📡 Received signaling message: \(message.type)")
+        // CameraViewController는 WebRTC를 사용하지 않으므로 시그널링 메시지는 무시
+    }
 }
 
 // MARK: - SwiftUI View

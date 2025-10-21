@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SlowMotion Camera Viewer</title>
+    <title>SlowMotion Camera Viewer (WebRTC)</title>
     <style>
         * {
             margin: 0;
@@ -110,9 +110,9 @@
             justify-content: center;
         }
 
-        #preview {
-            max-width: 100%;
-            max-height: 100%;
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
             object-fit: contain;
         }
 
@@ -169,7 +169,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📹 SlowMotion Camera Viewer</h1>
+        <h1>📹 SlowMotion Camera Viewer (WebRTC)</h1>
 
         <div class="status">
             <div class="status-text">
@@ -184,8 +184,7 @@
         </div>
 
         <div class="video-container">
-            <img id="preview" style="display: none;">
-            <div class="placeholder" id="placeholder">카메라 스트림을 기다리는 중...</div>
+            <video id="remoteVideo" autoplay playsinline></video>
         </div>
 
         <div class="stats">
@@ -194,20 +193,12 @@
                 <div class="stat-value" id="cameraStatus">-</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">프레임 수신</div>
-                <div class="stat-value" id="frameCount">0</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">FPS</div>
-                <div class="stat-value" id="fps">0</div>
+                <div class="stat-label">WebRTC 상태</div>
+                <div class="stat-value" id="webrtcStatus">대기중</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">연결 시간</div>
                 <div class="stat-value" id="uptime">00:00</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">레이턴시</div>
-                <div class="stat-value" id="latency">-</div>
             </div>
         </div>
 
@@ -218,23 +209,24 @@
 
     <script>
         let ws = null;
-        let frameCount = 0;
-        let lastFrameTime = Date.now();
-        let fpsCounter = 0;
+        let peerConnection = null;
         let connectionTime = null;
-        let latencySum = 0;
-        let latencyCount = 0;
 
         const statusIndicator = document.getElementById('statusIndicator');
         const statusText = document.getElementById('statusText');
-        const preview = document.getElementById('preview');
-        const placeholder = document.getElementById('placeholder');
+        const remoteVideo = document.getElementById('remoteVideo');
         const cameraStatusEl = document.getElementById('cameraStatus');
-        const frameCountEl = document.getElementById('frameCount');
-        const fpsEl = document.getElementById('fps');
+        const webrtcStatusEl = document.getElementById('webrtcStatus');
         const uptimeEl = document.getElementById('uptime');
-        const latencyEl = document.getElementById('latency');
         const logEl = document.getElementById('log');
+
+        // WebRTC 설정
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
 
         function connect() {
             const wsUrl = `ws://${window.location.hostname}:8080/viewer`;
@@ -245,60 +237,32 @@
             ws.onopen = () => {
                 log('✅ WebSocket 연결됨');
                 statusIndicator.className = 'status-indicator status-connected';
-                statusText.textContent = '연결됨';
+                statusText.textContent = '연결됨 - WebRTC 대기중';
                 connectionTime = Date.now();
             };
 
             ws.onmessage = async (event) => {
-                if (event.data instanceof Blob) {
-                    // 비디오 프레임 (JPEG 이미지 + timestamp)
-                    const arrayBuffer = await event.data.arrayBuffer();
-                    const dataView = new DataView(arrayBuffer);
+                try {
+                    const data = JSON.parse(event.data);
 
-                    // 첫 8바이트에서 타임스탬프 추출
-                    const captureTime = dataView.getFloat64(0, true); // little-endian
-                    const now = Date.now() / 1000; // Convert to seconds
-                    const latency = (now - captureTime) * 1000; // Convert to ms
-
-                    // 레이턴시 평균 계산 (이동 평균)
-                    latencySum += latency;
-                    latencyCount++;
-                    if (latencyCount >= 10) {
-                        const avgLatency = Math.round(latencySum / latencyCount);
-                        latencyEl.textContent = `${avgLatency}ms`;
-                        latencySum = 0;
-                        latencyCount = 0;
+                    // WebRTC Offer 수신
+                    if (data.type === 'offer') {
+                        log('📡 Offer 수신됨');
+                        await handleOffer(data);
                     }
-
-                    // 나머지는 JPEG 데이터
-                    const jpegBlob = new Blob([arrayBuffer.slice(8)], { type: 'image/jpeg' });
-                    const url = URL.createObjectURL(jpegBlob);
-                    preview.src = url;
-                    preview.style.display = 'block';
-                    placeholder.style.display = 'none';
-
-                    frameCount++;
-                    frameCountEl.textContent = frameCount;
-
-                    // FPS 계산
-                    fpsCounter++;
-                    const nowMs = Date.now();
-                    const elapsed = (nowMs - lastFrameTime) / 1000;
-                    if (elapsed >= 1.0) {
-                        const fps = Math.round(fpsCounter / elapsed);
-                        fpsEl.textContent = fps;
-                        fpsCounter = 0;
-                        lastFrameTime = nowMs;
+                    // ICE Candidate 수신
+                    else if (data.type === 'ice' && data.candidate) {
+                        log('🧊 ICE Candidate 수신됨');
+                        await handleIceCandidate(data.candidate);
                     }
-                } else {
-                    // JSON 메시지 (상태 등)
-                    try {
-                        const data = JSON.parse(event.data);
-                        if (data.type === 'camera_status') {
-                            cameraStatusEl.textContent = data.status;
-                            log(`📊 카메라 상태: ${data.status}`);
-                        }
-                    } catch (e) {
+                    // 카메라 상태
+                    else if (data.type === 'camera_status') {
+                        cameraStatusEl.textContent = data.status;
+                        log(`📊 카메라 상태: ${data.status}`);
+                    }
+                } catch (e) {
+                    // 바이너리 메시지는 무시 (WebRTC가 비디오 처리)
+                    if (!(event.data instanceof Blob)) {
                         console.error('Failed to parse message:', e);
                     }
                 }
@@ -309,6 +273,12 @@
                 statusIndicator.className = 'status-indicator status-disconnected';
                 statusText.textContent = '연결 끊김';
 
+                // Peer connection 닫기
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+
                 // 재연결 시도
                 setTimeout(connect, 3000);
             };
@@ -316,6 +286,79 @@
             ws.onerror = (error) => {
                 log(`❌ WebSocket 오류: ${error.message || 'Unknown error'}`);
             };
+        }
+
+        async function handleOffer(offer) {
+            try {
+                // Peer Connection 생성
+                peerConnection = new RTCPeerConnection(rtcConfig);
+
+                // ICE Candidate 처리
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        log('🧊 ICE Candidate 생성됨');
+                        ws.send(JSON.stringify({
+                            type: 'ice',
+                            candidate: {
+                                candidate: event.candidate.candidate,
+                                sdpMLineIndex: event.candidate.sdpMLineIndex,
+                                sdpMid: event.candidate.sdpMid
+                            }
+                        }));
+                    }
+                };
+
+                // 연결 상태 변경
+                peerConnection.onconnectionstatechange = () => {
+                    const state = peerConnection.connectionState;
+                    log(`🔗 연결 상태: ${state}`);
+                    webrtcStatusEl.textContent = state;
+
+                    if (state === 'connected') {
+                        statusText.textContent = '연결됨 - WebRTC 스트리밍';
+                    }
+                };
+
+                // 원격 스트림 수신
+                peerConnection.ontrack = (event) => {
+                    log('📹 원격 스트림 수신됨');
+                    remoteVideo.srcObject = event.streams[0];
+                };
+
+                // Offer 설정
+                await peerConnection.setRemoteDescription(new RTCSessionDescription({
+                    type: 'offer',
+                    sdp: offer.sdp
+                }));
+
+                // Answer 생성
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                // Answer 전송
+                ws.send(JSON.stringify({
+                    type: 'answer',
+                    sdp: answer.sdp
+                }));
+
+                log('✅ Answer 전송 완료');
+            } catch (error) {
+                log(`❌ Offer 처리 실패: ${error.message}`);
+            }
+        }
+
+        async function handleIceCandidate(candidate) {
+            if (peerConnection) {
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate({
+                        candidate: candidate.candidate,
+                        sdpMLineIndex: candidate.sdpMLineIndex,
+                        sdpMid: candidate.sdpMid
+                    }));
+                } catch (error) {
+                    log(`❌ ICE Candidate 추가 실패: ${error.message}`);
+                }
+            }
         }
 
         function sendCommand(command) {

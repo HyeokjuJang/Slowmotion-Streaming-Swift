@@ -12,6 +12,7 @@ protocol WebSocketManagerDelegate: AnyObject {
     func webSocketDidConnect()
     func webSocketDidDisconnect(error: Error?)
     func webSocketDidReceiveCommand(_ command: String)
+    func webSocketDidReceiveSignaling(_ message: SignalingMessage)
 }
 
 class WebSocketManager: NSObject, WebSocketDelegate {
@@ -80,7 +81,7 @@ class WebSocketManager: NSObject, WebSocketDelegate {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: json, options: [])
             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                socket.write(string: jsonString)
+                socket.write(string: jsonString, completion: nil)
                 print("📤 Sent JSON: \(jsonString)")
             }
         } catch {
@@ -95,6 +96,26 @@ class WebSocketManager: NSObject, WebSocketDelegate {
         }
 
         socket.write(data: data)
+    }
+
+    /// WebRTC Signaling 메시지 전송
+    func sendSignaling(_ message: SignalingMessage) {
+        guard isConnected, let socket = socket else {
+            print("⚠️ Cannot send signaling: not connected")
+            return
+        }
+
+        do {
+            let encoder = JSONEncoder()
+            let jsonData = try encoder.encode(message)
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                socket.write(string: jsonString, completion: nil)
+                print("📤 Sent signaling: \(message.type)")
+                print("📤 Signaling JSON: \(jsonString.prefix(200))...")
+            }
+        } catch {
+            print("❌ Failed to encode signaling message: \(error)")
+        }
     }
 
     // MARK: - WebSocketDelegate
@@ -174,18 +195,29 @@ class WebSocketManager: NSObject, WebSocketDelegate {
     private func handleTextMessage(_ text: String) {
         print("📥 Received text: \(text)")
 
-        // JSON 파싱
-        guard let data = text.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let command = json["command"] as? String else {
-            print("⚠️ Invalid message format")
+        guard let data = text.data(using: .utf8) else {
+            print("⚠️ Failed to convert text to data")
             return
         }
 
-        // 명령 처리
-        DispatchQueue.main.async {
-            self.delegate?.webSocketDidReceiveCommand(command)
+        // WebRTC 시그널링 메시지 확인
+        if let signalingMessage = try? JSONDecoder().decode(SignalingMessage.self, from: data) {
+            DispatchQueue.main.async {
+                self.delegate?.webSocketDidReceiveSignaling(signalingMessage)
+            }
+            return
         }
+
+        // 제어 명령 확인
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let command = json["command"] as? String {
+            DispatchQueue.main.async {
+                self.delegate?.webSocketDidReceiveCommand(command)
+            }
+            return
+        }
+
+        print("⚠️ Invalid message format")
     }
 
     private func handleBinaryMessage(_ data: Data) {

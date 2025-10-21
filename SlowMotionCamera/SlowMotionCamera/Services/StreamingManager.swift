@@ -85,6 +85,9 @@ class StreamingManager {
             return
         }
 
+        // 프레임 캡처 시간 기록 (latency 측정용)
+        let captureTime = CFAbsoluteTimeGetCurrent()
+
         let resolution = streamingResolution
         let quality = jpegQuality
 
@@ -94,7 +97,7 @@ class StreamingManager {
             autoreleasepool {
                 guard let self = self else { return }
 
-                let startTime = CFAbsoluteTimeGetCurrent()
+                let processingStartTime = CFAbsoluteTimeGetCurrent()
 
                 // JPEG 데이터 생성
                 if let jpegData = self.imageProcessor.jpegDataFromPixelBuffer(
@@ -102,12 +105,18 @@ class StreamingManager {
                     targetSize: resolution,
                     quality: quality
                 ) {
+                    let processingTime = (CFAbsoluteTimeGetCurrent() - processingStartTime) * 1000
+
+                    // 타임스탬프를 포함한 메타데이터 추가 (첫 8바이트에 timestamp)
+                    var dataWithTimestamp = Data()
+                    var timestamp = captureTime
+                    dataWithTimestamp.append(Data(bytes: &timestamp, count: 8))
+                    dataWithTimestamp.append(jpegData)
+
                     // 직접 전송 (추가 큐 없이)
-                    self.webSocketManager.sendBinaryData(jpegData)
+                    self.webSocketManager.sendBinaryData(dataWithTimestamp)
 
                     self.streamedFrameCount += 1
-
-                    let processingTime = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
 
                     // 성능 로그 (5초마다)
                     let now = Date()

@@ -14,6 +14,15 @@ struct ContentView: View {
     @StateObject private var state = RecordingStateManager()
     @State private var showSettings = false
     @State private var cameraPermissionGranted = false
+    @StateObject private var webRTCController: WebRTCViewController
+
+    init() {
+        let settings = CameraSettings()
+        let state = RecordingStateManager()
+        _settings = StateObject(wrappedValue: settings)
+        _state = StateObject(wrappedValue: state)
+        _webRTCController = StateObject(wrappedValue: WebRTCViewController(settings: settings, state: state))
+    }
 
     var body: some View {
         Group {
@@ -30,8 +39,8 @@ struct ContentView: View {
                     }
                 )
             } else {
-                // 메인 카메라 화면
-                CameraView(controller: CameraViewController(settings: settings, state: state))
+                // 메인 카메라 화면 (WebRTC 버전)
+                WebRTCCameraView(controller: webRTCController)
             }
         }
         .onAppear {

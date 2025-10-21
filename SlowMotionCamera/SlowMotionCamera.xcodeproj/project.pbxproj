@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5555FDB62EA7184C00404DA5 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 5555FDB52EA7184C00404DA5 /* Starscream */; };
+		05F1B3C21FBC79A5F4733950 /* Pods_SlowMotionCamera_SlowMotionCameraUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B822DC54A784B8F4BC21CBF2 /* Pods_SlowMotionCamera_SlowMotionCameraUITests.framework */; };
+		6C061C8C030544D9663E5B99 /* Pods_SlowMotionCameraTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 301FF95FFB54E38F39F60A82 /* Pods_SlowMotionCameraTests.framework */; };
+		8926AAFB02C25FB83C8059EF /* Pods_SlowMotionCamera.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AE3201DFFE80C7F47622604 /* Pods_SlowMotionCamera.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,9 +30,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		301FF95FFB54E38F39F60A82 /* Pods_SlowMotionCameraTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SlowMotionCameraTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		31D9A0722C4EBCDE66291372 /* Pods-SlowMotionCameraTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlowMotionCameraTests.release.xcconfig"; path = "Target Support Files/Pods-SlowMotionCameraTests/Pods-SlowMotionCameraTests.release.xcconfig"; sourceTree = "<group>"; };
+		441A7D7978B7AE45303A5633 /* Pods-SlowMotionCamera-SlowMotionCameraUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlowMotionCamera-SlowMotionCameraUITests.debug.xcconfig"; path = "Target Support Files/Pods-SlowMotionCamera-SlowMotionCameraUITests/Pods-SlowMotionCamera-SlowMotionCameraUITests.debug.xcconfig"; sourceTree = "<group>"; };
 		5555FD872EA717D300404DA5 /* SlowMotionCamera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlowMotionCamera.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5555FD972EA717D700404DA5 /* SlowMotionCameraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SlowMotionCameraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5555FDA12EA717D700404DA5 /* SlowMotionCameraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SlowMotionCameraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5908512AF45DB9462E4D81DE /* Pods-SlowMotionCamera-SlowMotionCameraUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlowMotionCamera-SlowMotionCameraUITests.release.xcconfig"; path = "Target Support Files/Pods-SlowMotionCamera-SlowMotionCameraUITests/Pods-SlowMotionCamera-SlowMotionCameraUITests.release.xcconfig"; sourceTree = "<group>"; };
+		7AE3201DFFE80C7F47622604 /* Pods_SlowMotionCamera.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SlowMotionCamera.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A140D5B1FE06B7FDD6009C18 /* Pods-SlowMotionCameraTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlowMotionCameraTests.debug.xcconfig"; path = "Target Support Files/Pods-SlowMotionCameraTests/Pods-SlowMotionCameraTests.debug.xcconfig"; sourceTree = "<group>"; };
+		B822DC54A784B8F4BC21CBF2 /* Pods_SlowMotionCamera_SlowMotionCameraUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SlowMotionCamera_SlowMotionCameraUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C13A04CE7B0AA47B31FFFE2B /* Pods-SlowMotionCamera.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlowMotionCamera.release.xcconfig"; path = "Target Support Files/Pods-SlowMotionCamera/Pods-SlowMotionCamera.release.xcconfig"; sourceTree = "<group>"; };
+		CEAF88B2471D1FD75AD5C2C9 /* Pods-SlowMotionCamera.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlowMotionCamera.debug.xcconfig"; path = "Target Support Files/Pods-SlowMotionCamera/Pods-SlowMotionCamera.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -69,7 +80,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5555FDB62EA7184C00404DA5 /* Starscream in Frameworks */,
+				8926AAFB02C25FB83C8059EF /* Pods_SlowMotionCamera.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,6 +88,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6C061C8C030544D9663E5B99 /* Pods_SlowMotionCameraTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,12 +96,23 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05F1B3C21FBC79A5F4733950 /* Pods_SlowMotionCamera_SlowMotionCameraUITests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		07F131A3A276F844D31EACB1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7AE3201DFFE80C7F47622604 /* Pods_SlowMotionCamera.framework */,
+				B822DC54A784B8F4BC21CBF2 /* Pods_SlowMotionCamera_SlowMotionCameraUITests.framework */,
+				301FF95FFB54E38F39F60A82 /* Pods_SlowMotionCameraTests.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		5555FD7E2EA717D300404DA5 = {
 			isa = PBXGroup;
 			children = (
@@ -97,6 +120,8 @@
 				5555FD9A2EA717D700404DA5 /* SlowMotionCameraTests */,
 				5555FDA42EA717D700404DA5 /* SlowMotionCameraUITests */,
 				5555FD882EA717D300404DA5 /* Products */,
+				AAF873A1BBD866F622F53173 /* Pods */,
+				07F131A3A276F844D31EACB1 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -110,6 +135,19 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AAF873A1BBD866F622F53173 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				CEAF88B2471D1FD75AD5C2C9 /* Pods-SlowMotionCamera.debug.xcconfig */,
+				C13A04CE7B0AA47B31FFFE2B /* Pods-SlowMotionCamera.release.xcconfig */,
+				441A7D7978B7AE45303A5633 /* Pods-SlowMotionCamera-SlowMotionCameraUITests.debug.xcconfig */,
+				5908512AF45DB9462E4D81DE /* Pods-SlowMotionCamera-SlowMotionCameraUITests.release.xcconfig */,
+				A140D5B1FE06B7FDD6009C18 /* Pods-SlowMotionCameraTests.debug.xcconfig */,
+				31D9A0722C4EBCDE66291372 /* Pods-SlowMotionCameraTests.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -117,9 +155,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5555FDAB2EA717D700404DA5 /* Build configuration list for PBXNativeTarget "SlowMotionCamera" */;
 			buildPhases = (
+				0E4A916C7763CE6944775398 /* [CP] Check Pods Manifest.lock */,
 				5555FD832EA717D300404DA5 /* Sources */,
 				5555FD842EA717D300404DA5 /* Frameworks */,
 				5555FD852EA717D300404DA5 /* Resources */,
+				2D26B476B57895C88243A117 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -130,7 +170,6 @@
 			);
 			name = SlowMotionCamera;
 			packageProductDependencies = (
-				5555FDB52EA7184C00404DA5 /* Starscream */,
 			);
 			productName = SlowMotionCamera;
 			productReference = 5555FD872EA717D300404DA5 /* SlowMotionCamera.app */;
@@ -140,6 +179,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5555FDAE2EA717D700404DA5 /* Build configuration list for PBXNativeTarget "SlowMotionCameraTests" */;
 			buildPhases = (
+				C364A92DD73D51A15FAD063F /* [CP] Check Pods Manifest.lock */,
 				5555FD932EA717D700404DA5 /* Sources */,
 				5555FD942EA717D700404DA5 /* Frameworks */,
 				5555FD952EA717D700404DA5 /* Resources */,
@@ -153,8 +193,6 @@
 				5555FD9A2EA717D700404DA5 /* SlowMotionCameraTests */,
 			);
 			name = SlowMotionCameraTests;
-			packageProductDependencies = (
-			);
 			productName = SlowMotionCameraTests;
 			productReference = 5555FD972EA717D700404DA5 /* SlowMotionCameraTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -163,9 +201,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5555FDB12EA717D700404DA5 /* Build configuration list for PBXNativeTarget "SlowMotionCameraUITests" */;
 			buildPhases = (
+				D5BA94205B1EEC96F7F56F23 /* [CP] Check Pods Manifest.lock */,
 				5555FD9D2EA717D700404DA5 /* Sources */,
 				5555FD9E2EA717D700404DA5 /* Frameworks */,
 				5555FD9F2EA717D700404DA5 /* Resources */,
+				139447A561511B474770C87E /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -176,8 +216,6 @@
 				5555FDA42EA717D700404DA5 /* SlowMotionCameraUITests */,
 			);
 			name = SlowMotionCameraUITests;
-			packageProductDependencies = (
-			);
 			productName = SlowMotionCameraUITests;
 			productReference = 5555FDA12EA717D700404DA5 /* SlowMotionCameraUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -215,7 +253,6 @@
 			mainGroup = 5555FD7E2EA717D300404DA5;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				5555FDB42EA7184C00404DA5 /* XCRemoteSwiftPackageReference "Starscream" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5555FD882EA717D300404DA5 /* Products */;
@@ -252,6 +289,109 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0E4A916C7763CE6944775398 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-SlowMotionCamera-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		139447A561511B474770C87E /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlowMotionCamera-SlowMotionCameraUITests/Pods-SlowMotionCamera-SlowMotionCameraUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlowMotionCamera-SlowMotionCameraUITests/Pods-SlowMotionCamera-SlowMotionCameraUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SlowMotionCamera-SlowMotionCameraUITests/Pods-SlowMotionCamera-SlowMotionCameraUITests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		2D26B476B57895C88243A117 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlowMotionCamera/Pods-SlowMotionCamera-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlowMotionCamera/Pods-SlowMotionCamera-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SlowMotionCamera/Pods-SlowMotionCamera-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C364A92DD73D51A15FAD063F /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-SlowMotionCameraTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D5BA94205B1EEC96F7F56F23 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-SlowMotionCamera-SlowMotionCameraUITests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5555FD832EA717D300404DA5 /* Sources */ = {
@@ -328,7 +468,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -391,7 +531,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -412,6 +552,7 @@
 		};
 		5555FDAC2EA717D700404DA5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CEAF88B2471D1FD75AD5C2C9 /* Pods-SlowMotionCamera.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -445,6 +586,7 @@
 		};
 		5555FDAD2EA717D700404DA5 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C13A04CE7B0AA47B31FFFE2B /* Pods-SlowMotionCamera.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -478,6 +620,7 @@
 		};
 		5555FDAF2EA717D700404DA5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A140D5B1FE06B7FDD6009C18 /* Pods-SlowMotionCameraTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -497,6 +640,7 @@
 		};
 		5555FDB02EA717D700404DA5 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 31D9A0722C4EBCDE66291372 /* Pods-SlowMotionCameraTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -516,6 +660,7 @@
 		};
 		5555FDB22EA717D700404DA5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 441A7D7978B7AE45303A5633 /* Pods-SlowMotionCamera-SlowMotionCameraUITests.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -533,6 +678,7 @@
 		};
 		5555FDB32EA717D700404DA5 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5908512AF45DB9462E4D81DE /* Pods-SlowMotionCamera-SlowMotionCameraUITests.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -588,25 +734,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		5555FDB42EA7184C00404DA5 /* XCRemoteSwiftPackageReference "Starscream" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/daltoniam/Starscream.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.0.8;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		5555FDB52EA7184C00404DA5 /* Starscream */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5555FDB42EA7184C00404DA5 /* XCRemoteSwiftPackageReference "Starscream" */;
-			productName = Starscream;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5555FD7F2EA717D300404DA5 /* Project object */;
 }

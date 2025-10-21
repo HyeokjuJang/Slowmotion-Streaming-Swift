@@ -22,7 +22,7 @@ class CameraSettings: ObservableObject {
     // MARK: - Streaming Settings
     @Published var streamingFPS: Int32 = Constants.Streaming.defaultFPS
     @Published var streamingResolution: CGSize = Constants.Streaming.defaultResolution
-    @Published var streamingResolutionName: String = "720p"
+    @Published var streamingResolutionName: String = "360p"  // 최저 latency 위해 360p로 변경
     @Published var jpegQuality: CGFloat = Constants.Streaming.jpegQuality
 
     // MARK: - Computed Properties
@@ -37,9 +37,12 @@ class CameraSettings: ObservableObject {
         guard isServerURLValid else { return "" }
 
         // WebSocket URL에서 HTTP URL 생성
-        let httpURL = serverURL
+        var httpURL = serverURL
             .replacingOccurrences(of: "ws://", with: "http://")
             .replacingOccurrences(of: "wss://", with: "https://")
+
+        // 포트 8080을 3000으로 변경 (WebSocket 포트 → HTTP 포트)
+        httpURL = httpURL.replacingOccurrences(of: ":8080", with: ":3000")
 
         // /camera 경로를 /upload로 변경
         if httpURL.hasSuffix("/camera") {
@@ -64,15 +67,17 @@ class CameraSettings: ObservableObject {
         UserDefaults.standard.set(serverURL, forKey: "serverURL")
         UserDefaults.standard.set(uploadURL, forKey: "uploadURL")
         UserDefaults.standard.set(recordingFPS, forKey: "recordingFPS")
-        UserDefaults.standard.set(NSValue(cgSize: recordingResolution), forKey: "recordingResolution")
         UserDefaults.standard.set(recordingResolutionName, forKey: "recordingResolutionName")
         UserDefaults.standard.set(streamingFPS, forKey: "streamingFPS")
-        UserDefaults.standard.set(NSValue(cgSize: streamingResolution), forKey: "streamingResolution")
         UserDefaults.standard.set(streamingResolutionName, forKey: "streamingResolutionName")
         UserDefaults.standard.set(jpegQuality, forKey: "jpegQuality")
     }
 
     func loadSettings() {
+        // 이전 버전의 잘못된 데이터 제거 (한 번만 실행)
+        UserDefaults.standard.removeObject(forKey: "recordingResolution")
+        UserDefaults.standard.removeObject(forKey: "streamingResolution")
+
         if let savedServerURL = UserDefaults.standard.string(forKey: "serverURL") {
             serverURL = savedServerURL
         }
@@ -86,12 +91,10 @@ class CameraSettings: ObservableObject {
             recordingFPS = fps
         }
 
-        if let savedResolution = UserDefaults.standard.object(forKey: "recordingResolution") as? NSValue {
-            recordingResolution = savedResolution.cgSizeValue
-        }
-
         if let savedName = UserDefaults.standard.string(forKey: "recordingResolutionName") {
             recordingResolutionName = savedName
+            // 이름으로부터 해상도 복원
+            setRecordingResolution(name: savedName)
         }
 
         let savedStreamingFPS = UserDefaults.standard.object(forKey: "streamingFPS") as? Int32
@@ -99,12 +102,10 @@ class CameraSettings: ObservableObject {
             streamingFPS = fps
         }
 
-        if let savedResolution = UserDefaults.standard.object(forKey: "streamingResolution") as? NSValue {
-            streamingResolution = savedResolution.cgSizeValue
-        }
-
         if let savedName = UserDefaults.standard.string(forKey: "streamingResolutionName") {
             streamingResolutionName = savedName
+            // 이름으로부터 해상도 복원
+            setStreamingResolution(name: savedName)
         }
 
         let savedQuality = UserDefaults.standard.object(forKey: "jpegQuality") as? CGFloat

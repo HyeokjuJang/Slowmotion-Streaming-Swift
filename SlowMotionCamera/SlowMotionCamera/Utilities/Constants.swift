@@ -31,17 +31,17 @@ struct Constants {
     // MARK: - 스트리밍 설정
     struct Streaming {
         static let defaultFPS: Int32 = 15
-        static let defaultResolution = CGSize(width: 1280, height: 720)
-        static let jpegQuality: CGFloat = 0.7
+        static let defaultResolution = CGSize(width: 640, height: 360)  // 360p for lowest latency
+        static let jpegQuality: CGFloat = 0.4  // 40% for faster encoding
 
         // 지원 스트리밍 FPS
         static let supportedFPS: [Int32] = [10, 15, 30]
 
         // 지원 스트리밍 해상도
         static let supportedResolutions: [String: CGSize] = [
-            "480p": CGSize(width: 854, height: 480),
-            "720p": CGSize(width: 1280, height: 720),
-            "1080p": CGSize(width: 1920, height: 1080)
+            "360p": CGSize(width: 640, height: 360),   // 추가: 더 빠름
+            "480p": CGSize(width: 640, height: 480),   // 수정: 854 → 640
+            "720p": CGSize(width: 1280, height: 720)
         ]
     }
 
