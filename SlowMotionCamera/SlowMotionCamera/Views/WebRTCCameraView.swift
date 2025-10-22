@@ -110,6 +110,9 @@ struct WebRTCCameraView: View {
             )
         }
         .onAppear {
+            // 화면 자동 잠금 방지
+            UIApplication.shared.isIdleTimerDisabled = true
+
             // 카메라 권한 확인 및 요청
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async {
@@ -123,6 +126,9 @@ struct WebRTCCameraView: View {
             }
         }
         .onDisappear {
+            // 화면 자동 잠금 재활성화
+            UIApplication.shared.isIdleTimerDisabled = false
+
             controller.stopSession()
             controller.disconnect()
         }

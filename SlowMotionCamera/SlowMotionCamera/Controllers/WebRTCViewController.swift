@@ -59,17 +59,21 @@ class WebRTCViewController: ObservableObject {
             // WebRTC Peer Connection 설정
             webRTCManager.setupPeerConnection()
 
+            // WebRTC 스트리밍용 설정 (Recording 설정과 분리)
+            let streamingFPS = Constants.WebRTC.streamingFPS
+            let streamingResolution = Constants.WebRTC.streamingResolution
+
             // Video Capturer 생성
             let capturer = webRTCManager.setupCapturer(
-                fps: settings.recordingFPS,
-                width: Int32(settings.recordingResolution.width),
-                height: Int32(settings.recordingResolution.height)
+                fps: streamingFPS,
+                width: Int32(streamingResolution.width),
+                height: Int32(streamingResolution.height)
             )
 
             // 카메라 설정
             try cameraManager.setupCamera(
-                fps: settings.recordingFPS,
-                resolution: settings.recordingResolution,
+                fps: streamingFPS,
+                resolution: streamingResolution,
                 videoCapturer: capturer
             )
 
@@ -160,10 +164,13 @@ extension WebRTCViewController: WebSocketManagerDelegate {
 
         // Video Capturer 재생성 및 업데이트 (재연결 시 videoSource가 새로 생성되므로)
         if cameraManager != nil {
+            let streamingFPS = Constants.WebRTC.streamingFPS
+            let streamingResolution = Constants.WebRTC.streamingResolution
+
             let capturer = webRTCManager.setupCapturer(
-                fps: settings.recordingFPS,
-                width: Int32(settings.recordingResolution.width),
-                height: Int32(settings.recordingResolution.height)
+                fps: streamingFPS,
+                width: Int32(streamingResolution.width),
+                height: Int32(streamingResolution.height)
             )
             cameraManager?.updateVideoCapturer(capturer)
         }

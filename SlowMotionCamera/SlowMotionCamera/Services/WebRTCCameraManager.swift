@@ -276,6 +276,11 @@ extension WebRTCCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         )
 
         videoCapturer.capture(videoFrame)
+
+        webrtcFrameCount += 1
+        if webrtcFrameCount % 300 == 0 {  // 매 300프레임마다 (약 2.5초)
+            print("📹 WebRTC frames sent: \(webrtcFrameCount)")
+        }
     }
 
     private func recordFrame(_ sampleBuffer: CMSampleBuffer) {

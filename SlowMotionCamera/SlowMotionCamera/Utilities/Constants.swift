@@ -28,6 +28,12 @@ struct Constants {
         ]
     }
 
+    // MARK: - WebRTC 스트리밍 설정
+    struct WebRTC {
+        static let streamingFPS: Int32 = 30  // WebRTC 최적 FPS
+        static let streamingResolution = CGSize(width: 1280, height: 720)  // 720p
+    }
+
     // MARK: - 스트리밍 설정
     struct Streaming {
         static let defaultFPS: Int32 = 15

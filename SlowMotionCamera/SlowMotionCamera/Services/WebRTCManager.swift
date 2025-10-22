@@ -215,7 +215,9 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
     }
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
-        print("🧊 ICE connection state: \(newState.rawValue)")
+        let stateNames = ["new", "checking", "connected", "completed", "failed", "disconnected", "closed"]
+        let stateName = newState.rawValue < stateNames.count ? stateNames[Int(newState.rawValue)] : "unknown"
+        print("🧊 ICE connection state: \(newState.rawValue) (\(stateName))")
         delegate?.webRTCManager(self, didChangeConnectionState: newState)
     }
 
