@@ -59,22 +59,19 @@ class WebRTCViewController: ObservableObject {
             // WebRTC Peer Connection 설정
             webRTCManager.setupPeerConnection()
 
-            // WebRTC 스트리밍용 설정 (Recording 설정과 분리)
-            let streamingFPS = Constants.WebRTC.streamingFPS
-            let streamingResolution = Constants.WebRTC.streamingResolution
-
-            // Video Capturer 생성
+            // Video Capturer 생성 (스트리밍용 FPS 정보)
             let capturer = webRTCManager.setupCapturer(
-                fps: streamingFPS,
-                width: Int32(streamingResolution.width),
-                height: Int32(streamingResolution.height)
+                fps: Constants.WebRTC.streamingFPS,
+                width: Int32(Constants.WebRTC.streamingResolution.width),
+                height: Int32(Constants.WebRTC.streamingResolution.height)
             )
 
-            // 카메라 설정
+            // 카메라 설정 (녹화용 120fps, 1080p)
             try cameraManager.setupCamera(
-                fps: streamingFPS,
-                resolution: streamingResolution,
-                videoCapturer: capturer
+                fps: settings.recordingFPS,
+                resolution: settings.recordingResolution,
+                videoCapturer: capturer,
+                webrtcStreamingFPS: Constants.WebRTC.streamingFPS
             )
 
             // Preview layer 설정 (메인 스레드에서)
@@ -164,15 +161,13 @@ extension WebRTCViewController: WebSocketManagerDelegate {
 
         // Video Capturer 재생성 및 업데이트 (재연결 시 videoSource가 새로 생성되므로)
         if cameraManager != nil {
-            let streamingFPS = Constants.WebRTC.streamingFPS
-            let streamingResolution = Constants.WebRTC.streamingResolution
-
             let capturer = webRTCManager.setupCapturer(
-                fps: streamingFPS,
-                width: Int32(streamingResolution.width),
-                height: Int32(streamingResolution.height)
+                fps: Constants.WebRTC.streamingFPS,
+                width: Int32(Constants.WebRTC.streamingResolution.width),
+                height: Int32(Constants.WebRTC.streamingResolution.height)
             )
             cameraManager?.updateVideoCapturer(capturer)
+            cameraManager?.updateWebRTCStreamingFPS(Constants.WebRTC.streamingFPS)
         }
 
         // WebRTC Offer 생성

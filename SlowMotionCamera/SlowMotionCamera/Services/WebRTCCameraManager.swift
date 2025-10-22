@@ -43,6 +43,8 @@ class WebRTCCameraManager: NSObject {
     private var recordingFPS: Int32 = Constants.Recording.defaultFPS
     private var recordingResolution: CGSize = Constants.Recording.defaultResolution
     private var webrtcFrameCount: Int = 0
+    private var webrtcStreamingFPS: Int32 = Constants.WebRTC.streamingFPS
+    private var frameSkipCounter: Int = 0
 
     private let captureQueue = DispatchQueue(
         label: "webrtc.camera.capture",
@@ -64,10 +66,11 @@ class WebRTCCameraManager: NSObject {
 
     // MARK: - Camera Setup
 
-    func setupCamera(fps: Int32, resolution: CGSize, videoCapturer: RTCVideoCapturer?) throws {
+    func setupCamera(fps: Int32, resolution: CGSize, videoCapturer: RTCVideoCapturer?, webrtcStreamingFPS: Int32) throws {
         self.recordingFPS = fps
         self.recordingResolution = resolution
         self.videoCapturer = videoCapturer
+        self.webrtcStreamingFPS = webrtcStreamingFPS
 
         // 카메라 권한 확인
         let authStatus = AVCaptureDevice.authorizationStatus(for: .video)
@@ -134,6 +137,12 @@ class WebRTCCameraManager: NSObject {
     func updateVideoCapturer(_ videoCapturer: RTCVideoCapturer?) {
         self.videoCapturer = videoCapturer
         print("✅ Video capturer updated")
+    }
+
+    func updateWebRTCStreamingFPS(_ fps: Int32) {
+        self.webrtcStreamingFPS = fps
+        self.frameSkipCounter = 0
+        print("✅ WebRTC streaming FPS updated to \(fps)")
     }
 
     // MARK: - Format Selection
@@ -266,6 +275,14 @@ extension WebRTCCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
             return
         }
 
+        // 프레임 스킵: 120fps → 30fps (4프레임마다 1개만 전송)
+        let frameSkipRatio = Int(recordingFPS / webrtcStreamingFPS)
+        frameSkipCounter += 1
+
+        if frameSkipCounter % frameSkipRatio != 0 {
+            return  // 이 프레임은 스킵
+        }
+
         let timeStampNs = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer)) * 1_000_000_000
         let rtcPixelBuffer = RTCCVPixelBuffer(pixelBuffer: pixelBuffer)
 
@@ -278,8 +295,8 @@ extension WebRTCCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         videoCapturer.capture(videoFrame)
 
         webrtcFrameCount += 1
-        if webrtcFrameCount % 300 == 0 {  // 매 300프레임마다 (약 2.5초)
-            print("📹 WebRTC frames sent: \(webrtcFrameCount)")
+        if webrtcFrameCount % 90 == 0 {  // 매 90프레임마다 (30fps 기준 3초)
+            print("📹 WebRTC frames sent: \(webrtcFrameCount) (skipped \(frameSkipCounter - webrtcFrameCount) frames)")
         }
     }
 
