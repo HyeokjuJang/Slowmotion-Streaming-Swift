@@ -79,11 +79,7 @@ class WebRTCViewController: ObservableObject {
             DispatchQueue.main.async {
                 self.previewLayer = layer
                 self.isCameraReady = true
-                print("✅ Preview layer set: \(self.previewLayer != nil)")
-                print("✅ Camera ready for display")
             }
-
-            print("✅ WebRTC camera setup complete")
         } catch {
             print("❌ Failed to setup camera: \(error)")
             connectionStatus = "카메라 설정 실패"

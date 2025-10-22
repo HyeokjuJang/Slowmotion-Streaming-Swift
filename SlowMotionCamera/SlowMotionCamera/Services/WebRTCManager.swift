@@ -112,9 +112,14 @@ class WebRTCManager: NSObject {
         let videoTrack = peerConnectionFactory.videoTrack(with: videoSource, trackId: "video0")
         self.localVideoTrack = videoTrack
 
-        peerConnection?.add(videoTrack, streamIds: ["stream0"])
+        // Transceiver로 추가하여 방향을 명시적으로 설정
+        let transceiverInit = RTCRtpTransceiverInit()
+        transceiverInit.direction = .sendOnly
+        transceiverInit.streamIds = ["stream0"]  // Stream ID 명시
 
-        print("✅ Video track added to peer connection")
+        peerConnection?.addTransceiver(with: videoTrack, init: transceiverInit)
+
+        print("✅ Video track added to peer connection (sendOnly)")
     }
 
     // MARK: - Video Capturer Setup

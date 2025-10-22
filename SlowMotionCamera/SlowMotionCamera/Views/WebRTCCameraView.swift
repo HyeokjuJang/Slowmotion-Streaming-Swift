@@ -110,17 +110,13 @@ struct WebRTCCameraView: View {
             )
         }
         .onAppear {
-            print("📱 WebRTCCameraView appeared")
-
             // 카메라 권한 확인 및 요청
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async {
                     if granted {
-                        print("✅ Camera permission granted")
                         // 서버 연결 (카메라 설정 포함)
                         controller.connect()
                     } else {
-                        print("❌ Camera permission denied")
                         controller.connectionStatus = "카메라 권한이 필요합니다"
                     }
                 }

@@ -184,7 +184,7 @@
         </div>
 
         <div class="video-container">
-            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="remoteVideo" autoplay playsinline muted></video>
         </div>
 
         <div class="stats">
@@ -247,18 +247,15 @@
 
                     // WebRTC Offer 수신
                     if (data.type === 'offer') {
-                        log('📡 Offer 수신됨');
                         await handleOffer(data);
                     }
                     // ICE Candidate 수신
                     else if (data.type === 'ice' && data.candidate) {
-                        log('🧊 ICE Candidate 수신됨');
                         await handleIceCandidate(data.candidate);
                     }
                     // 카메라 상태
                     else if (data.type === 'camera_status') {
                         cameraStatusEl.textContent = data.status;
-                        log(`📊 카메라 상태: ${data.status}`);
                     }
                 } catch (e) {
                     // 바이너리 메시지는 무시 (WebRTC가 비디오 처리)
@@ -290,13 +287,14 @@
 
         async function handleOffer(offer) {
             try {
+                log('📡 Offer 수신됨');
+
                 // Peer Connection 생성
                 peerConnection = new RTCPeerConnection(rtcConfig);
 
                 // ICE Candidate 처리
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
-                        log('🧊 ICE Candidate 생성됨');
                         ws.send(JSON.stringify({
                             type: 'ice',
                             candidate: {
@@ -311,18 +309,37 @@
                 // 연결 상태 변경
                 peerConnection.onconnectionstatechange = () => {
                     const state = peerConnection.connectionState;
-                    log(`🔗 연결 상태: ${state}`);
                     webrtcStatusEl.textContent = state;
 
                     if (state === 'connected') {
                         statusText.textContent = '연결됨 - WebRTC 스트리밍';
+                        log('✅ WebRTC 연결 완료');
+                    } else if (state === 'failed') {
+                        log('❌ WebRTC 연결 실패');
                     }
                 };
 
                 // 원격 스트림 수신
                 peerConnection.ontrack = (event) => {
-                    log('📹 원격 스트림 수신됨');
-                    remoteVideo.srcObject = event.streams[0];
+                    log('📹 비디오 스트림 수신됨');
+
+                    // Stream이 있는지 확인
+                    if (event.streams && event.streams.length > 0) {
+                        remoteVideo.srcObject = event.streams[0];
+                    } else {
+                        // Stream이 없으면 수동으로 생성
+                        let stream = remoteVideo.srcObject;
+                        if (!stream) {
+                            stream = new MediaStream();
+                            remoteVideo.srcObject = stream;
+                        }
+                        stream.addTrack(event.track);
+                    }
+
+                    // 비디오 재생 시작
+                    remoteVideo.play().catch(e => {
+                        log(`❌ 비디오 재생 실패: ${e.message}`);
+                    });
                 };
 
                 // Offer 설정
@@ -356,7 +373,7 @@
                         sdpMid: candidate.sdpMid
                     }));
                 } catch (error) {
-                    log(`❌ ICE Candidate 추가 실패: ${error.message}`);
+                    console.error('ICE Candidate 추가 실패:', error);
                 }
             }
         }
