@@ -18,6 +18,7 @@ class WebRTCViewController: ObservableObject {
     @Published var recordingStatus: String = "대기중"
     @Published var isRecording: Bool = false
     @Published var previewLayer: AVCaptureVideoPreviewLayer?
+    @Published var isCameraReady: Bool = false
 
     // MARK: - Dependencies
 
@@ -72,8 +73,15 @@ class WebRTCViewController: ObservableObject {
                 videoCapturer: capturer
             )
 
-            // Preview layer 설정
-            self.previewLayer = cameraManager.getPreviewLayer()
+            // Preview layer 설정 (메인 스레드에서)
+            let layer = cameraManager.getPreviewLayer()
+
+            DispatchQueue.main.async {
+                self.previewLayer = layer
+                self.isCameraReady = true
+                print("✅ Preview layer set: \(self.previewLayer != nil)")
+                print("✅ Camera ready for display")
+            }
 
             print("✅ WebRTC camera setup complete")
         } catch {

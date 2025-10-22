@@ -53,12 +53,14 @@ class WebRTCCameraManager: NSObject {
 
     func getPreviewLayer() -> AVCaptureVideoPreviewLayer {
         if let existing = previewLayer {
+            print("✅ Returning existing preview layer")
             return existing
         }
 
         let layer = AVCaptureVideoPreviewLayer(session: captureSession)
         layer.videoGravity = .resizeAspectFill
         previewLayer = layer
+        print("✅ Created new preview layer for session: \(captureSession)")
         return layer
     }
 
@@ -168,9 +170,17 @@ class WebRTCCameraManager: NSObject {
     func startSession() {
         if !captureSession.isRunning {
             print("📹 Starting camera session...")
+            print("   - Inputs: \(captureSession.inputs.count)")
+            print("   - Outputs: \(captureSession.outputs.count)")
+
             DispatchQueue.global(qos: .userInitiated).async {
                 self.captureSession.startRunning()
-                print("✅ Camera session started")
+
+                DispatchQueue.main.async {
+                    print("✅ Camera session started")
+                    print("   - Running: \(self.captureSession.isRunning)")
+                    print("   - Preview layer: \(self.previewLayer != nil)")
+                }
             }
         } else {
             print("⚠️ Camera session already running")

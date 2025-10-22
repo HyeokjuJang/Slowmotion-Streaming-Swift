@@ -17,6 +17,7 @@ struct WebRTCCameraView: View {
         ZStack {
             // 카메라 프리뷰
             WebRTCPreviewView(previewLayer: controller.previewLayer)
+                .id(controller.isCameraReady) // Preview layer가 준비되면 뷰 재생성
                 .ignoresSafeArea()
 
             // UI 오버레이
@@ -109,8 +110,21 @@ struct WebRTCCameraView: View {
             )
         }
         .onAppear {
-            // 서버 연결 (카메라 설정 포함)
-            controller.connect()
+            print("📱 WebRTCCameraView appeared")
+
+            // 카메라 권한 확인 및 요청
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        print("✅ Camera permission granted")
+                        // 서버 연결 (카메라 설정 포함)
+                        controller.connect()
+                    } else {
+                        print("❌ Camera permission denied")
+                        controller.connectionStatus = "카메라 권한이 필요합니다"
+                    }
+                }
+            }
         }
         .onDisappear {
             controller.stopSession()
@@ -125,33 +139,52 @@ struct WebRTCPreviewView: UIViewRepresentable {
 
     let previewLayer: AVCaptureVideoPreviewLayer?
 
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
+    func makeUIView(context: Context) -> PreviewContainerView {
+        let view = PreviewContainerView(frame: .zero)
         view.backgroundColor = .black
-
-        if let previewLayer = previewLayer {
-            previewLayer.videoGravity = .resizeAspectFill
-            view.layer.addSublayer(previewLayer)
-            print("✅ Preview layer added to view in makeUIView")
-        } else {
-            print("⚠️ No preview layer available in makeUIView")
-        }
-
+        view.previewLayer = previewLayer
+        print("✅ Preview container view created")
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {
-        guard let previewLayer = previewLayer else {
-            print("⚠️ No preview layer in updateUIView")
-            return
+    func updateUIView(_ uiView: PreviewContainerView, context: Context) {
+        // Preview layer 업데이트
+        if uiView.previewLayer !== previewLayer {
+            uiView.previewLayer = previewLayer
+            print("✅ Preview layer updated in container")
         }
+    }
+}
 
-        // frame 업데이트
-        DispatchQueue.main.async {
-            if previewLayer.frame != uiView.bounds {
-                previewLayer.frame = uiView.bounds
-                print("📐 Updated preview layer frame: \(uiView.bounds)")
+// MARK: - Preview Container View
+
+class PreviewContainerView: UIView {
+
+    var previewLayer: AVCaptureVideoPreviewLayer? {
+        didSet {
+            // 기존 sublayer 제거
+            oldValue?.removeFromSuperlayer()
+
+            // 새 preview layer 추가
+            if let previewLayer = previewLayer {
+                previewLayer.videoGravity = .resizeAspectFill
+                previewLayer.frame = bounds
+                layer.insertSublayer(previewLayer, at: 0)
+                print("✅ Preview layer added to container with frame: \(bounds)")
             }
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        // Frame 업데이트
+        if let previewLayer = previewLayer, previewLayer.frame != bounds {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            previewLayer.frame = bounds
+            CATransaction.commit()
+            print("📐 Preview layer frame updated to: \(bounds)")
         }
     }
 }
