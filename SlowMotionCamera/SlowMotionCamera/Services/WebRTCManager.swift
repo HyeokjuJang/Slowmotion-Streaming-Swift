@@ -154,14 +154,17 @@ class WebRTCManager: NSObject {
                 return
             }
 
-            self.peerConnection?.setLocalDescription(sdp) { error in
+            // SDP에 비트레이트 제한 추가 (2 Mbps)
+            let modifiedSDP = self.setMaxBitrate(sdp: sdp, maxBitrate: 2000)
+
+            self.peerConnection?.setLocalDescription(modifiedSDP) { error in
                 if let error = error {
                     print("❌ Failed to set local description: \(error)")
                     return
                 }
 
-                print("✅ Offer created and set as local description")
-                self.delegate?.webRTCManager(self, didGenerateOffer: sdp)
+                print("✅ Offer created with bitrate limit and set as local description")
+                self.delegate?.webRTCManager(self, didGenerateOffer: modifiedSDP)
             }
         }
     }
@@ -191,6 +194,38 @@ class WebRTCManager: NSObject {
         videoSource = nil
 
         print("⚪️ WebRTC disconnected")
+    }
+
+    // MARK: - SDP Modification
+
+    /// SDP에 최대 비트레이트 제한 추가
+    private func setMaxBitrate(sdp: RTCSessionDescription, maxBitrate: Int) -> RTCSessionDescription {
+        var sdpString = sdp.sdp
+        let lines = sdpString.components(separatedBy: "\r\n")
+        var modifiedLines: [String] = []
+        var inVideoMedia = false
+
+        for line in lines {
+            modifiedLines.append(line)
+
+            // video media section 찾기
+            if line.hasPrefix("m=video") {
+                inVideoMedia = true
+            } else if line.hasPrefix("m=") {
+                inVideoMedia = false
+            }
+
+            // video의 rtpmap 뒤에 비트레이트 추가
+            if inVideoMedia && line.contains("a=rtpmap") && (line.contains("VP8") || line.contains("H264")) {
+                // b=AS: 라인 추가 (kbps 단위)
+                modifiedLines.append("b=AS:\(maxBitrate)")
+                // TIAS 라인도 추가 (bps 단위)
+                modifiedLines.append("b=TIAS:\(maxBitrate * 1000)")
+            }
+        }
+
+        let modifiedSDP = modifiedLines.joined(separator: "\r\n")
+        return RTCSessionDescription(type: sdp.type, sdp: modifiedSDP)
     }
 }
 
