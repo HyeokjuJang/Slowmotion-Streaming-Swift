@@ -56,17 +56,27 @@ function handleCameraConnection(ws) {
 
     ws.on('message', (message) => {
         // 모든 메시지를 Buffer로 변환
-        const messageBuffer = Buffer.isBuffer(message) ? message : Buffer.from(message);
+        const messageBuffer = Buffer.isBuffer(message)
+            ? message
+            : Buffer.from(message);
 
         // JSON 파싱 시도
         try {
             const messageStr = messageBuffer.toString('utf8');
             const data = JSON.parse(messageStr);
 
-            console.log(`📥 Camera JSON message: ${data.type || data.status || 'unknown'}`);
+            console.log(
+                `📥 Camera JSON message: ${
+                    data.type || data.status || 'unknown'
+                }`
+            );
 
             // WebRTC 시그널링 메시지 (offer, answer, ice)
-            if (data.type === 'offer' || data.type === 'answer' || data.type === 'ice') {
+            if (
+                data.type === 'offer' ||
+                data.type === 'answer' ||
+                data.type === 'ice'
+            ) {
                 console.log(`📡 WebRTC signaling from camera: ${data.type}`);
 
                 // 모든 뷰어에게 시그널링 전달
@@ -83,11 +93,13 @@ function handleCameraConnection(ws) {
                 // 뷰어에게도 상태 전달
                 viewers.forEach((viewer) => {
                     if (viewer.readyState === WebSocket.OPEN) {
-                        viewer.send(JSON.stringify({
-                            type: 'camera_status',
-                            cameraId: id,
-                            status: data.status
-                        }));
+                        viewer.send(
+                            JSON.stringify({
+                                type: 'camera_status',
+                                cameraId: id,
+                                status: data.status,
+                            })
+                        );
                     }
                 });
             }
@@ -103,7 +115,10 @@ function handleCameraConnection(ws) {
                 // console.log(`📹 Frame relayed: ${messageBuffer.length} bytes`);
             } else {
                 console.error('Failed to parse message:', error);
-                console.error('Message was:', messageBuffer.toString().substring(0, 500));
+                console.error(
+                    'Message was:',
+                    messageBuffer.toString().substring(0, 500)
+                );
             }
         }
     });
@@ -193,15 +208,19 @@ app.post('/control/stop', (req, res) => {
 // 비디오 업로드 API
 app.post('/upload', upload.single('video'), (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ success: false, error: 'No file uploaded' });
+        return res
+            .status(400)
+            .json({ success: false, error: 'No file uploaded' });
     }
 
-    console.log(`📤 Video uploaded: ${req.file.filename} (${req.file.size} bytes)`);
+    console.log(
+        `📤 Video uploaded: ${req.file.filename} (${req.file.size} bytes)`
+    );
     res.json({
         success: true,
         filename: req.file.filename,
         size: req.file.size,
-        path: `/uploads/${req.file.filename}`
+        path: `/uploads/${req.file.filename}`,
     });
 });
 
@@ -213,13 +232,13 @@ app.get('/videos', (req, res) => {
         }
 
         const videos = files
-            .filter(file => file.endsWith('.mov') || file.endsWith('.mp4'))
-            .map(file => {
+            .filter((file) => file.endsWith('.mov') || file.endsWith('.mp4'))
+            .map((file) => {
                 const stats = fs.statSync(path.join(uploadsDir, file));
                 return {
                     filename: file,
                     size: stats.size,
-                    created: stats.birthtime
+                    created: stats.birthtime,
                 };
             })
             .sort((a, b) => b.created - a.created);
@@ -236,7 +255,7 @@ app.get('/status', (req, res) => {
     res.json({
         cameras: cameras.size,
         viewers: viewers.size,
-        timestamp: Date.now()
+        timestamp: Date.now(),
     });
 });
 
@@ -249,5 +268,7 @@ app.listen(PORT, () => {
     console.log(`  - Viewer WebSocket: ws://localhost:${WS_PORT}/viewer`);
     console.log(`  - Viewer page: http://localhost:${PORT}`);
     console.log(`  - Upload API: http://localhost:${PORT}/upload`);
-    console.log(`  - Control API: http://localhost:${PORT}/control/{start|stop}`);
+    console.log(
+        `  - Control API: http://localhost:${PORT}/control/{start|stop}`
+    );
 });
