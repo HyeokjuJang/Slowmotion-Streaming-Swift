@@ -26,6 +26,7 @@ class CameraSettings: ObservableObject {
     @Published var recordingResolutionName: String = "1080p"
 
     // MARK: - Streaming Settings
+    @Published var disableStreaming: Bool = false  // 스트리밍 비활성화 모드
     @Published var streamingMode: StreamingMode = .webSocket  // 기본값: WebSocket
     @Published var streamingFPS: Int32 = Constants.Streaming.defaultFPS
     @Published var streamingResolution: CGSize = Constants.Streaming.defaultResolution
@@ -76,6 +77,7 @@ class CameraSettings: ObservableObject {
         UserDefaults.standard.set(uploadURL, forKey: "uploadURL")
         UserDefaults.standard.set(recordingFPS, forKey: "recordingFPS")
         UserDefaults.standard.set(recordingResolutionName, forKey: "recordingResolutionName")
+        UserDefaults.standard.set(disableStreaming, forKey: "disableStreaming")
         UserDefaults.standard.set(streamingMode.rawValue, forKey: "streamingMode")
         UserDefaults.standard.set(streamingFPS, forKey: "streamingFPS")
         UserDefaults.standard.set(streamingResolutionName, forKey: "streamingResolutionName")
@@ -106,6 +108,8 @@ class CameraSettings: ObservableObject {
             // 이름으로부터 해상도 복원
             setRecordingResolution(name: savedName)
         }
+
+        disableStreaming = UserDefaults.standard.bool(forKey: "disableStreaming")
 
         if let savedModeString = UserDefaults.standard.string(forKey: "streamingMode"),
            let savedMode = StreamingMode(rawValue: savedModeString) {

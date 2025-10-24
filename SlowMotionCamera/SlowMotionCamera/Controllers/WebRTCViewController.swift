@@ -95,11 +95,15 @@ class WebRTCViewController: ObservableObject {
                 camera.delegate = self
                 self.cameraManager = camera
 
-                // 스트리밍 매니저 초기화
-                self.streamingManager = StreamingManager(
-                    webSocketManager: webSocketManager,
-                    settings: settings
-                )
+                // 스트리밍 매니저 초기화 (스트리밍 비활성화 모드가 아닐 때만)
+                if !settings.disableStreaming {
+                    self.streamingManager = StreamingManager(
+                        webSocketManager: webSocketManager,
+                        settings: settings
+                    )
+                } else {
+                    print("🔵 Disable streaming mode: StreamingManager not initialized")
+                }
 
                 // 카메라 설정
                 try camera.setupCamera(
@@ -129,8 +133,10 @@ class WebRTCViewController: ObservableObject {
             return
         }
 
-        // 카메라 설정 (최초 1회만)
-        setupCamera()
+        // 스트리밍 비활성화 모드가 아닐 때만 카메라 설정
+        if !settings.disableStreaming {
+            setupCamera()
+        }
 
         connectionStatus = "연결중..."
         webSocketManager.connect(to: settings.serverURL)
@@ -212,6 +218,12 @@ extension WebRTCViewController: WebSocketManagerDelegate {
     func webSocketDidConnect() {
         connectionStatus = "연결됨"
 
+        // 스트리밍 비활성화 모드: 웹소켓만 연결, 카메라는 녹화 명령 대기
+        if settings.disableStreaming {
+            print("🔵 Disable streaming mode: waiting for recording command...")
+            return
+        }
+
         if settings.streamingMode == .webRTC {
             // WebRTC 모드: WebRTC Peer Connection 설정
 
@@ -250,7 +262,25 @@ extension WebRTCViewController: WebSocketManagerDelegate {
 
         switch command {
         case "start":
-            startRecording()
+            // 스트리밍 비활성화 모드: 카메라 설정 및 시작 후 녹화
+            if settings.disableStreaming {
+                print("🎥 Disable streaming mode: setting up camera for recording...")
+
+                // 카메라가 아직 설정되지 않았으면 설정
+                if cameraManager == nil && webRTCCameraManager == nil {
+                    setupCamera()
+                }
+
+                // 카메라 세션 시작
+                startSession()
+
+                // 잠시 대기 후 녹화 시작 (카메라 초기화 시간 확보)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.startRecording()
+                }
+            } else {
+                startRecording()
+            }
         case "stop":
             stopRecording()
         case "reconnect":
@@ -388,6 +418,9 @@ extension WebRTCViewController: CameraManagerDelegate, WebRTCCameraManagerDelega
     }
 
     func cameraDidCaptureFrame(_ sampleBuffer: CMSampleBuffer) {
+        // 스트리밍 비활성화 모드: 프레임 전송 안 함
+        guard !settings.disableStreaming else { return }
+
         // WebSocket 스트리밍: 프레임을 StreamingManager에 전달
         streamingManager?.processFrame(sampleBuffer, recordingFPS: settings.recordingFPS)
     }
@@ -431,16 +464,25 @@ extension WebRTCViewController: CameraManagerDelegate, WebRTCCameraManagerDelega
         request.httpBody = body
 
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let self = self else { return }
+
             DispatchQueue.main.async {
                 if let error = error {
                     print("❌ Upload failed: \(error)")
-                    self?.recordingStatus = "업로드 실패"
+                    self.recordingStatus = "업로드 실패"
                 } else {
                     print("✅ Upload successful")
-                    self?.recordingStatus = "업로드 완료"
+                    self.recordingStatus = "업로드 완료"
 
                     // 임시 파일 삭제
                     try? FileManager.default.removeItem(at: fileURL)
+                }
+
+                // 스트리밍 비활성화 모드: 업로드 완료 후 카메라 종료
+                if self.settings.disableStreaming {
+                    print("🔴 Disable streaming mode: stopping camera session...")
+                    self.stopSession()
+                    self.recordingStatus = "대기중 (카메라 꺼짐)"
                 }
             }
         }.resume()
