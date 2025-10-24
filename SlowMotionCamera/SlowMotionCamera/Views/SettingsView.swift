@@ -74,6 +74,19 @@ struct SettingsView: View {
                 // 스트리밍 설정 섹션
                 Section(header: Text("스트리밍 설정")) {
                     VStack(alignment: .leading, spacing: 8) {
+                        Text("전송 모드")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Picker("전송 모드", selection: $settings.streamingMode) {
+                            ForEach(StreamingMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("FPS")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -102,12 +115,26 @@ struct SettingsView: View {
                         }
                     }
 
+                    // WebSocket 모드일 때만 JPEG 품질 표시
+                    if settings.streamingMode == .webSocket {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("JPEG 품질: \(Int(settings.jpegQuality * 100))%")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+
+                            Slider(value: $settings.jpegQuality, in: 0.5...1.0, step: 0.05)
+                        }
+                    }
+
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("JPEG 품질: \(Int(settings.jpegQuality * 100))%")
+                        Text("대역폭: \(settings.bandwidthKbps) kbps (\(String(format: "%.1f", Double(settings.bandwidthKbps) / 1000.0)) Mbps)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
 
-                        Slider(value: $settings.jpegQuality, in: 0.5...1.0, step: 0.05)
+                        Slider(value: Binding(
+                            get: { Double(settings.bandwidthKbps) },
+                            set: { settings.bandwidthKbps = Int($0) }
+                        ), in: 500...5000, step: 100)
                     }
                 }
 

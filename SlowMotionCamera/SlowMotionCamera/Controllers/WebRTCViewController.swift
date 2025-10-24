@@ -29,7 +29,9 @@ class WebRTCViewController: ObservableObject {
 
     private let webSocketManager = WebSocketManager()
     private let webRTCManager = WebRTCManager()
-    private var cameraManager: WebRTCCameraManager?
+    private var webRTCCameraManager: WebRTCCameraManager?
+    private var cameraManager: CameraManager?
+    private var streamingManager: StreamingManager?
 
     // MARK: - Initialization
 
@@ -46,40 +48,72 @@ class WebRTCViewController: ObservableObject {
     // MARK: - Setup
 
     private func setupCamera() {
-        guard cameraManager == nil else {
+        guard webRTCCameraManager == nil && cameraManager == nil else {
             print("⚠️ Camera already set up, skipping")
             return
         }
 
-        let cameraManager = WebRTCCameraManager()
-        cameraManager.delegate = self
-        self.cameraManager = cameraManager
-
         do {
-            // WebRTC Peer Connection 설정
-            webRTCManager.setupPeerConnection()
+            if settings.streamingMode == .webRTC {
+                // WebRTC 모드: WebRTCCameraManager 사용
+                print("🎥 Setting up WebRTC camera mode...")
 
-            // Video Capturer 생성 (스트리밍용 FPS 정보)
-            let capturer = webRTCManager.setupCapturer(
-                fps: Constants.WebRTC.streamingFPS,
-                width: Int32(Constants.WebRTC.streamingResolution.width),
-                height: Int32(Constants.WebRTC.streamingResolution.height)
-            )
+                let webRTCCamera = WebRTCCameraManager()
+                webRTCCamera.delegate = self
+                self.webRTCCameraManager = webRTCCamera
 
-            // 카메라 설정 (녹화용 120fps, 1080p)
-            try cameraManager.setupCamera(
-                fps: settings.recordingFPS,
-                resolution: settings.recordingResolution,
-                videoCapturer: capturer,
-                webrtcStreamingFPS: Constants.WebRTC.streamingFPS
-            )
+                // WebRTC Peer Connection 설정
+                webRTCManager.setupPeerConnection()
 
-            // Preview layer 설정 (메인 스레드에서)
-            let layer = cameraManager.getPreviewLayer()
+                // Video Capturer 생성 (스트리밍용 FPS 정보)
+                let capturer = webRTCManager.setupCapturer(
+                    fps: Constants.WebRTC.streamingFPS,
+                    width: Int32(Constants.WebRTC.streamingResolution.width),
+                    height: Int32(Constants.WebRTC.streamingResolution.height)
+                )
 
-            DispatchQueue.main.async {
-                self.previewLayer = layer
-                self.isCameraReady = true
+                // 카메라 설정 (녹화용 fps)
+                try webRTCCamera.setupCamera(
+                    fps: settings.recordingFPS,
+                    resolution: settings.recordingResolution,
+                    videoCapturer: capturer,
+                    webrtcStreamingFPS: Constants.WebRTC.streamingFPS
+                )
+
+                // Preview layer 설정 (메인 스레드에서)
+                let layer = webRTCCamera.getPreviewLayer()
+
+                DispatchQueue.main.async {
+                    self.previewLayer = layer
+                    self.isCameraReady = true
+                }
+            } else {
+                // WebSocket 모드: CameraManager + StreamingManager 사용
+                print("🎥 Setting up WebSocket camera mode...")
+
+                let camera = CameraManager()
+                camera.delegate = self
+                self.cameraManager = camera
+
+                // 스트리밍 매니저 초기화
+                self.streamingManager = StreamingManager(
+                    webSocketManager: webSocketManager,
+                    settings: settings
+                )
+
+                // 카메라 설정
+                try camera.setupCamera(
+                    fps: settings.recordingFPS,
+                    resolution: settings.recordingResolution
+                )
+
+                // Preview layer 설정 (메인 스레드에서)
+                let layer = camera.getPreviewLayer()
+
+                DispatchQueue.main.async {
+                    self.previewLayer = layer
+                    self.isCameraReady = true
+                }
             }
         } catch {
             print("❌ Failed to setup camera: \(error)")
@@ -105,6 +139,7 @@ class WebRTCViewController: ObservableObject {
     func disconnect() {
         webSocketManager.disconnect()
         webRTCManager.disconnect()
+        webRTCCameraManager?.stopSession()
         cameraManager?.stopSession()
         connectionStatus = "연결 해제됨"
     }
@@ -112,11 +147,20 @@ class WebRTCViewController: ObservableObject {
     // MARK: - Camera Control
 
     func startSession() {
-        cameraManager?.startSession()
+        if settings.streamingMode == .webRTC {
+            webRTCCameraManager?.startSession()
+        } else {
+            cameraManager?.startSession()
+            streamingManager?.resetFrameCounter()
+        }
     }
 
     func stopSession() {
-        cameraManager?.stopSession()
+        if settings.streamingMode == .webRTC {
+            webRTCCameraManager?.stopSession()
+        } else {
+            cameraManager?.stopSession()
+        }
     }
 
     // MARK: - Recording Control
@@ -125,7 +169,11 @@ class WebRTCViewController: ObservableObject {
         guard !isRecording else { return }
 
         do {
-            try cameraManager?.startRecording()
+            if settings.streamingMode == .webRTC {
+                try webRTCCameraManager?.startRecording()
+            } else {
+                try cameraManager?.startRecording()
+            }
             isRecording = true
             recordingStatus = "녹화중"
         } catch {
@@ -137,7 +185,11 @@ class WebRTCViewController: ObservableObject {
     func stopRecording() {
         guard isRecording else { return }
 
-        cameraManager?.stopRecording()
+        if settings.streamingMode == .webRTC {
+            webRTCCameraManager?.stopRecording()
+        } else {
+            cameraManager?.stopRecording()
+        }
         isRecording = false
         recordingStatus = "대기중"
     }
@@ -145,7 +197,11 @@ class WebRTCViewController: ObservableObject {
     // MARK: - Preview Layer
 
     func getPreviewLayer() -> AVCaptureVideoPreviewLayer? {
-        return cameraManager?.getPreviewLayer()
+        if settings.streamingMode == .webRTC {
+            return webRTCCameraManager?.getPreviewLayer()
+        } else {
+            return cameraManager?.getPreviewLayer()
+        }
     }
 }
 
@@ -156,22 +212,27 @@ extension WebRTCViewController: WebSocketManagerDelegate {
     func webSocketDidConnect() {
         connectionStatus = "연결됨"
 
-        // WebRTC Peer Connection 재설정 (재연결 대비)
-        webRTCManager.setupPeerConnection()
+        if settings.streamingMode == .webRTC {
+            // WebRTC 모드: WebRTC Peer Connection 설정
 
-        // Video Capturer 재생성 및 업데이트 (재연결 시 videoSource가 새로 생성되므로)
-        if cameraManager != nil {
-            let capturer = webRTCManager.setupCapturer(
-                fps: Constants.WebRTC.streamingFPS,
-                width: Int32(Constants.WebRTC.streamingResolution.width),
-                height: Int32(Constants.WebRTC.streamingResolution.height)
-            )
-            cameraManager?.updateVideoCapturer(capturer)
-            cameraManager?.updateWebRTCStreamingFPS(Constants.WebRTC.streamingFPS)
+            // WebRTC Peer Connection 재설정 (재연결 대비)
+            webRTCManager.setupPeerConnection()
+
+            // Video Capturer 재생성 및 업데이트 (재연결 시 videoSource가 새로 생성되므로)
+            if webRTCCameraManager != nil {
+                let capturer = webRTCManager.setupCapturer(
+                    fps: Constants.WebRTC.streamingFPS,
+                    width: Int32(Constants.WebRTC.streamingResolution.width),
+                    height: Int32(Constants.WebRTC.streamingResolution.height)
+                )
+                webRTCCameraManager?.updateVideoCapturer(capturer)
+                webRTCCameraManager?.updateWebRTCStreamingFPS(Constants.WebRTC.streamingFPS)
+            }
+
+            // WebRTC Offer 생성
+            webRTCManager.createOffer()
         }
-
-        // WebRTC Offer 생성
-        webRTCManager.createOffer()
+        // WebSocket 모드: WebRTC 설정 스킵, 스트리밍 매니저만 사용
 
         // 카메라 세션 시작
         startSession()
@@ -210,13 +271,13 @@ extension WebRTCViewController: WebSocketManagerDelegate {
         webRTCManager.setupPeerConnection()
 
         // 3. Video Capturer 재생성
-        if cameraManager != nil {
+        if webRTCCameraManager != nil {
             let capturer = webRTCManager.setupCapturer(
                 fps: Constants.WebRTC.streamingFPS,
                 width: Int32(Constants.WebRTC.streamingResolution.width),
                 height: Int32(Constants.WebRTC.streamingResolution.height)
             )
-            cameraManager?.updateVideoCapturer(capturer)
+            webRTCCameraManager?.updateVideoCapturer(capturer)
         }
 
         // 4. 새로운 offer 생성
@@ -305,9 +366,9 @@ extension WebRTCViewController: WebRTCManagerDelegate {
     }
 }
 
-// MARK: - WebRTCCameraManagerDelegate
+// MARK: - CameraManagerDelegate & WebRTCCameraManagerDelegate
 
-extension WebRTCViewController: WebRTCCameraManagerDelegate {
+extension WebRTCViewController: CameraManagerDelegate, WebRTCCameraManagerDelegate {
 
     func cameraDidStartRecording() {
         DispatchQueue.main.async {
@@ -324,6 +385,11 @@ extension WebRTCViewController: WebRTCCameraManagerDelegate {
             // 비디오 업로드
             self.uploadVideo(fileURL: fileURL)
         }
+    }
+
+    func cameraDidCaptureFrame(_ sampleBuffer: CMSampleBuffer) {
+        // WebSocket 스트리밍: 프레임을 StreamingManager에 전달
+        streamingManager?.processFrame(sampleBuffer, recordingFPS: settings.recordingFPS)
     }
 
     func cameraDidEncounterError(_ error: Error) {

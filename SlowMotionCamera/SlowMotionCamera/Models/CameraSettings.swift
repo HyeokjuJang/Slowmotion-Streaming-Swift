@@ -8,6 +8,12 @@
 import Foundation
 import CoreGraphics
 
+/// 전송 모드 열거형
+enum StreamingMode: String, CaseIterable {
+    case webSocket = "WebSocket"
+    case webRTC = "WebRTC"
+}
+
 class CameraSettings: ObservableObject {
 
     // MARK: - Server Settings
@@ -20,10 +26,12 @@ class CameraSettings: ObservableObject {
     @Published var recordingResolutionName: String = "1080p"
 
     // MARK: - Streaming Settings
+    @Published var streamingMode: StreamingMode = .webSocket  // 기본값: WebSocket
     @Published var streamingFPS: Int32 = Constants.Streaming.defaultFPS
     @Published var streamingResolution: CGSize = Constants.Streaming.defaultResolution
     @Published var streamingResolutionName: String = "360p"  // 최저 latency 위해 360p로 변경
     @Published var jpegQuality: CGFloat = Constants.Streaming.jpegQuality
+    @Published var bandwidthKbps: Int = 2000  // 대역폭 (kbps), 기본값 2Mbps
 
     // MARK: - Computed Properties
 
@@ -68,9 +76,11 @@ class CameraSettings: ObservableObject {
         UserDefaults.standard.set(uploadURL, forKey: "uploadURL")
         UserDefaults.standard.set(recordingFPS, forKey: "recordingFPS")
         UserDefaults.standard.set(recordingResolutionName, forKey: "recordingResolutionName")
+        UserDefaults.standard.set(streamingMode.rawValue, forKey: "streamingMode")
         UserDefaults.standard.set(streamingFPS, forKey: "streamingFPS")
         UserDefaults.standard.set(streamingResolutionName, forKey: "streamingResolutionName")
         UserDefaults.standard.set(jpegQuality, forKey: "jpegQuality")
+        UserDefaults.standard.set(bandwidthKbps, forKey: "bandwidthKbps")
     }
 
     func loadSettings() {
@@ -97,6 +107,11 @@ class CameraSettings: ObservableObject {
             setRecordingResolution(name: savedName)
         }
 
+        if let savedModeString = UserDefaults.standard.string(forKey: "streamingMode"),
+           let savedMode = StreamingMode(rawValue: savedModeString) {
+            streamingMode = savedMode
+        }
+
         let savedStreamingFPS = UserDefaults.standard.object(forKey: "streamingFPS") as? Int32
         if let fps = savedStreamingFPS {
             streamingFPS = fps
@@ -111,6 +126,11 @@ class CameraSettings: ObservableObject {
         let savedQuality = UserDefaults.standard.object(forKey: "jpegQuality") as? CGFloat
         if let quality = savedQuality {
             jpegQuality = quality
+        }
+
+        let savedBandwidth = UserDefaults.standard.object(forKey: "bandwidthKbps") as? Int
+        if let bandwidth = savedBandwidth {
+            bandwidthKbps = bandwidth
         }
     }
 
