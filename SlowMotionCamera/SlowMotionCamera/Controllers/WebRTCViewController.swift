@@ -192,9 +192,37 @@ extension WebRTCViewController: WebSocketManagerDelegate {
             startRecording()
         case "stop":
             stopRecording()
+        case "reconnect":
+            print("🔄 Reconnection requested - restarting WebRTC connection")
+            reconnectWebRTC()
         default:
             print("⚠️ Unknown command: \(command)")
         }
+    }
+
+    private func reconnectWebRTC() {
+        print("🔄 Starting WebRTC reconnection...")
+
+        // 1. 기존 peer connection 종료
+        webRTCManager.disconnect()
+
+        // 2. 새 peer connection 설정
+        webRTCManager.setupPeerConnection()
+
+        // 3. Video Capturer 재생성
+        if cameraManager != nil {
+            let capturer = webRTCManager.setupCapturer(
+                fps: Constants.WebRTC.streamingFPS,
+                width: Int32(Constants.WebRTC.streamingResolution.width),
+                height: Int32(Constants.WebRTC.streamingResolution.height)
+            )
+            cameraManager?.updateVideoCapturer(capturer)
+        }
+
+        // 4. 새로운 offer 생성
+        webRTCManager.createOffer()
+
+        print("✅ WebRTC reconnection initiated")
     }
 
     func webSocketDidReceiveSignaling(_ message: SignalingMessage) {

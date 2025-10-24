@@ -158,6 +158,17 @@ function handleViewerConnection(ws) {
                     }
                 });
             }
+            // 재연결 요청 (viewer → camera)
+            else if (data.type === 'reconnect_request') {
+                console.log(`🔄 Reconnection requested from viewer: ${data.reason || 'unknown'}`);
+
+                // 카메라에게 재연결 명령 전달
+                cameras.forEach((camera) => {
+                    if (camera.readyState === WebSocket.OPEN) {
+                        camera.send(JSON.stringify({ command: 'reconnect' }));
+                    }
+                });
+            }
             // 제어 명령
             else if (data.command) {
                 console.log(`📩 Viewer ${id} command:`, data.command);

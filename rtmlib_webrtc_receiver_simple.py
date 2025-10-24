@@ -106,6 +106,39 @@ class WebRTCReceiver:
         except Exception as e:
             logger.debug(f"Frame send error: {e}")
 
+    async def setup_peer_connection_handlers(self):
+        """Peer connection 이벤트 핸들러 등록"""
+        # ICE candidate 이벤트
+        @self.pc.on("icecandidate")
+        async def on_icecandidate(candidate):
+            if candidate:
+                logger.info(f"🧊 ICE: type={candidate.type}, ip={candidate.ip}, port={candidate.port}")
+                await self.send_ice_candidate(candidate)
+
+        # 트랙 수신 이벤트
+        @self.pc.on("track")
+        async def on_track(track):
+            logger.info(f"🎬 Track received: {track.kind}")
+
+            if track.kind == "video":
+                self.video_track = VideoTransformTrack(track, self.send_frame)
+                asyncio.create_task(self.process_frames())
+                # 모니터링은 한 번만 시작 (이미 실행 중일 수 있음)
+
+        # 연결 상태 모니터링
+        @self.pc.on("connectionstatechange")
+        async def on_connectionstatechange():
+            logger.info(f"🔌 Connection state: {self.pc.connectionState}")
+
+        # ICE 연결 상태 모니터링
+        @self.pc.on("iceconnectionstatechange")
+        async def on_iceconnectionstatechange():
+            ice_state = self.pc.iceConnectionState
+            logger.info(f"🧊 ICE state: {ice_state}")
+
+            if ice_state == "connected" or ice_state == "completed":
+                logger.info("✅ WebRTC connection established!")
+
     async def connect_signaling(self):
         """Signaling 서버 연결"""
         logger.info(f"Connecting to {SIGNALING_SERVER}")
@@ -117,39 +150,11 @@ class WebRTCReceiver:
             # 프레임 전송 서버에도 연결
             await self.connect_frame_server()
 
-            # ICE candidate 이벤트
-            @self.pc.on("icecandidate")
-            async def on_icecandidate(candidate):
-                if candidate:
-                    # 모든 candidate 로깅 (디버깅용)
-                    logger.info(f"🧊 ICE: type={candidate.type}, ip={candidate.ip}, port={candidate.port}, protocol={candidate.protocol}")
-                    await self.send_ice_candidate(candidate)
+            # Peer connection 이벤트 핸들러 등록
+            await self.setup_peer_connection_handlers()
 
-            # 트랙 수신 이벤트
-            @self.pc.on("track")
-            async def on_track(track):
-                logger.info(f"🎬 Track received: {track.kind}")
-
-                if track.kind == "video":
-                    self.video_track = VideoTransformTrack(track, self.send_frame)
-                    asyncio.create_task(self.process_frames())
-                    asyncio.create_task(self.monitor_connection())
-
-            # 연결 상태 모니터링
-            @self.pc.on("connectionstatechange")
-            async def on_connectionstatechange():
-                state = self.pc.connectionState
-                logger.info(f"🔌 Connection state: {state}")
-
-            # ICE 연결 상태 모니터링
-            @self.pc.on("iceconnectionstatechange")
-            async def on_iceconnectionstatechange():
-                ice_state = self.pc.iceConnectionState
-                logger.info(f"🧊 ICE state: {ice_state}")
-
-                # 선택된 candidate pair 로깅
-                if ice_state == "connected" or ice_state == "completed":
-                    logger.info("✅ WebRTC connection established!")
+            # 연결 모니터링 시작
+            asyncio.create_task(self.monitor_connection())
 
             # 메시지 수신 루프
             async for message in ws:
@@ -241,19 +246,56 @@ class WebRTCReceiver:
         consecutive_failures = 0
 
         while True:
-            await asyncio.sleep(3)
+            await asyncio.sleep(0.5)  # 0.5초마다 체크 (매우 빠른 감지)
 
             if self.video_track:
                 elapsed = time.time() - self.video_track.last_recv_time
 
-                if elapsed > 5:
+                # 초고속 재연결: 1초 경고, 2초 후 재연결
+                if elapsed > 1:
                     consecutive_failures += 1
                     logger.error(f"❌ No frames for {int(elapsed)}s! (failure #{consecutive_failures})")
                     logger.error(f"   Connection state: {self.pc.connectionState}")
                     logger.error(f"   ICE state: {self.pc.iceConnectionState}")
 
-                    if elapsed > 10:
+                    if elapsed > 2:  # 2초만에 재연결!
                         logger.error(f"💀 Connection DEAD after {int(elapsed)}s")
+                        logger.info("🔄 Initiating reconnection...")
+
+                        # 1. 먼저 기존 연결 종료
+                        logger.info("1️⃣ Closing old peer connection...")
+                        await self.pc.close()
+
+                        # 2. 새로운 peer connection 생성
+                        logger.info("2️⃣ Creating new peer connection...")
+                        self.pc = RTCPeerConnection()
+                        self.video_track = None  # 리셋
+
+                        # 이벤트 핸들러 다시 등록
+                        await self.setup_peer_connection_handlers()
+
+                        # 3. 서버에 재연결 요청 (iPhone이 offer 보내도록)
+                        logger.info("3️⃣ Requesting new offer from camera...")
+                        if self.ws and not self.ws.closed:
+                            await self.ws.send(json.dumps({
+                                'type': 'reconnect_request',
+                                'reason': f'No frames for {int(elapsed)}s'
+                            }))
+
+                        # 재연결 대기 (10초로 단축)
+                        logger.info("⏳ Waiting 10s for reconnection...")
+                        await asyncio.sleep(10)
+
+                        # 재연결 성공했는지 확인
+                        if self.video_track:
+                            recent_elapsed = time.time() - self.video_track.last_recv_time
+                            if recent_elapsed < 2:  # 2초 이내면 성공
+                                logger.info("✅ Reconnection successful! Resuming monitoring...")
+                                consecutive_failures = 0
+                                continue
+                            else:
+                                logger.error("❌ Reconnection failed")
+
                         self.connection_dead = True
                         break
                 else:
