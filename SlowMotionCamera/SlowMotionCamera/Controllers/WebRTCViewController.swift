@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import AVFoundation
 import WebRTC
+import Combine
 
 class WebRTCViewController: ObservableObject {
 
@@ -33,6 +34,10 @@ class WebRTCViewController: ObservableObject {
     private var cameraManager: CameraManager?
     private var streamingManager: StreamingManager?
 
+    // MARK: - Combine
+
+    private var cancellables = Set<AnyCancellable>()
+
     // MARK: - Initialization
 
     init(settings: CameraSettings, state: RecordingStateManager) {
@@ -43,14 +48,74 @@ class WebRTCViewController: ObservableObject {
         webRTCManager.delegate = self
 
         // 카메라는 연결 시점에 설정됨
+
+        // 설정 변경 감지
+        setupSettingsObservers()
+    }
+
+    // MARK: - Settings Observers
+
+    private func setupSettingsObservers() {
+        // 녹화 FPS 변경 감지
+        settings.$recordingFPS
+            .dropFirst() // 초기값 무시
+            .sink { [weak self] _ in
+                self?.reconfigureCameraIfNeeded()
+            }
+            .store(in: &cancellables)
+
+        // 녹화 해상도 변경 감지
+        settings.$recordingResolution
+            .dropFirst() // 초기값 무시
+            .sink { [weak self] _ in
+                self?.reconfigureCameraIfNeeded()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func reconfigureCameraIfNeeded() {
+        // 카메라가 이미 설정되어 있고, 연결된 상태일 때만 재설정
+        guard cameraManager != nil || webRTCCameraManager != nil else {
+            print("⚠️ Camera not yet set up, skipping reconfiguration")
+            return
+        }
+
+        // 녹화 중이면 재설정하지 않음
+        guard !isRecording else {
+            print("⚠️ Recording in progress, cannot reconfigure camera")
+            return
+        }
+
+        print("🔄 Settings changed, reconfiguring camera...")
+
+        // 카메라 세션 중지
+        stopSession()
+
+        // 잠시 대기 후 재설정 (세션이 완전히 중지되도록)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self = self else { return }
+
+            // 카메라 재설정
+            self.setupCamera()
+
+            // 스트리밍 비활성화 모드가 아니면 세션 시작
+            if !self.settings.disableStreaming {
+                self.startSession()
+            }
+        }
     }
 
     // MARK: - Setup
 
     private func setupCamera() {
-        guard webRTCCameraManager == nil && cameraManager == nil else {
-            print("⚠️ Camera already set up, skipping")
-            return
+        // 기존 카메라 정리
+        if webRTCCameraManager != nil || cameraManager != nil {
+            print("🧹 Cleaning up existing camera setup...")
+            webRTCCameraManager?.stopSession()
+            cameraManager?.stopSession()
+            webRTCCameraManager = nil
+            cameraManager = nil
+            streamingManager = nil
         }
 
         do {
