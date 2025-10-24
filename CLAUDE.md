@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an iOS SlowMotion camera app with WebRTC streaming capability. The app records high-fps video (60/120/240fps) locally while simultaneously streaming at 30fps to a browser viewer via WebRTC. The system uses a Node.js signaling server to coordinate WebRTC connections and handle video uploads.
+This is an iOS SlowMotion camera app with **WebSocket streaming** capability. The app records high-fps video (60/120/240fps) locally while simultaneously streaming to a browser viewer via WebSocket. The system uses a Node.js server to relay video frames and handle video uploads.
+
+**Current Architecture**: WebSocket-based JPEG/H.264 streaming (primary method)
+**Legacy Support**: WebRTC streaming code is preserved but not actively used due to frequent reconnection issues (5-second delays on each reconnect)
 
 ## Key Architecture
 
@@ -142,6 +145,18 @@ Handles WebSocket connection to signaling server:
 <video id="remoteVideo" autoplay playsinline muted></video>
 ```
 
+### Issue 4: WebRTC Frequent Reconnections (Why WebSocket is Now Primary)
+**Cause**: WebRTC connection drops frequently due to network instability, ICE candidate failures, or mobile network switching.
+
+**Problem**: Each reconnection takes ~5 seconds (ICE gathering + offer/answer exchange + connection establishment), causing unacceptable interruptions.
+
+**Solution**: Reverted to WebSocket streaming as primary method:
+- WebSocket reconnection is faster (~1-2 seconds)
+- More resilient to network fluctuations
+- Simpler connection model without P2P complexity
+
+**Status**: WebRTC code is preserved in codebase for future use or specific scenarios, but WebSocket is the default streaming method.
+
 ## WebRTC Debugging
 
 ### iOS Side (Xcode Console)
@@ -255,7 +270,18 @@ If CPU exceeds 80%, reduce WebRTC resolution or streaming FPS.
 
 ## Recent Changes Log
 
-### 2025-10-23: Added WebRTC Bitrate Limiting
+### 2025-10-24: Reverted to WebSocket Streaming (Current Architecture)
+- **Status**: **Active - WebSocket is now the primary streaming method**
+- **Files**: Using existing WebSocket infrastructure, WebRTC code preserved
+- **Change**: Switched from WebRTC back to WebSocket streaming for primary use
+- **Reason**: WebRTC has frequent reconnection issues with 5-second delay on each reconnect, making it impractical for production use
+- **Impact**:
+  - More stable connection with faster recovery
+  - Both WebSocket and WebRTC code paths are maintained in codebase
+  - WebSocket is default, WebRTC available as fallback option
+- **Trade-offs**: Higher latency (~300-500ms) vs WebRTC (~100ms), but much better reliability
+
+### 2025-10-23: Added WebRTC Bitrate Limiting (Legacy)
 - **File**: `WebRTCManager.swift`
 - **Change**: Added `setMaxBitrate()` method to modify SDP
 - **Reason**: Prevent 30-second WebRTC connection timeout due to unlimited bitrate
