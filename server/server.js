@@ -54,6 +54,15 @@ function handleCameraConnection(ws) {
     cameras.set(id, ws);
     console.log(`📱 Camera connected: ${id}`);
 
+    // Keep-alive: 15초마다 ping 전송 (NAT 타임아웃 방지)
+    const keepAliveInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.ping();
+        } else {
+            clearInterval(keepAliveInterval);
+        }
+    }, 15000); // 15초
+
     ws.on('message', (message) => {
         // 모든 메시지를 Buffer로 변환
         const messageBuffer = Buffer.isBuffer(message) ? message : Buffer.from(message);
@@ -109,6 +118,7 @@ function handleCameraConnection(ws) {
     });
 
     ws.on('close', () => {
+        clearInterval(keepAliveInterval);
         cameras.delete(id);
         console.log(`📱 Camera disconnected: ${id}`);
     });
@@ -123,6 +133,15 @@ function handleViewerConnection(ws) {
     const id = Date.now();
     viewers.set(id, ws);
     console.log(`👁️  Viewer connected: ${id}`);
+
+    // Keep-alive: 15초마다 ping 전송
+    const keepAliveInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.ping();
+        } else {
+            clearInterval(keepAliveInterval);
+        }
+    }, 15000);
 
     ws.on('message', (message) => {
         try {
@@ -156,6 +175,7 @@ function handleViewerConnection(ws) {
     });
 
     ws.on('close', () => {
+        clearInterval(keepAliveInterval);
         viewers.delete(id);
         console.log(`👁️  Viewer disconnected: ${id}`);
     });

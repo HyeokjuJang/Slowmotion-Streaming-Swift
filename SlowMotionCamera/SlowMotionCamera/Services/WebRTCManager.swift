@@ -77,10 +77,8 @@ class WebRTCManager: NSObject {
         }
 
         let config = RTCConfiguration()
-        config.iceServers = [
-            RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"]),
-            RTCIceServer(urlStrings: ["stun:stun1.l.google.com:19302"])
-        ]
+        // 로컬 네트워크 최적화: ICE 서버 없음 (같은 WiFi에서 직접 연결)
+        config.iceServers = []
         config.sdpSemantics = .unifiedPlan
         config.continualGatheringPolicy = .gatherContinually
 
@@ -270,7 +268,35 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
     }
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
-        print("📡 Data channel opened")
+        print("📡 Data channel opened: \(dataChannel.label)")
+
+        // Keep-alive 채널이면 메시지 핸들러 등록
+        if dataChannel.label == "keepalive" {
+            dataChannel.delegate = self
+            print("💓 Keep-alive channel ready")
+        }
+    }
+}
+
+// MARK: - RTCDataChannelDelegate
+
+extension WebRTCManager: RTCDataChannelDelegate {
+    func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
+        print("📡 Data channel state changed: \(dataChannel.readyState.rawValue)")
+    }
+
+    func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
+        if let message = String(data: buffer.data, encoding: .utf8) {
+            print("💓 Keep-alive received: \(message)")
+
+            // Echo back (optional)
+            let response = "pong_\(message)"
+            if let data = response.data(using: .utf8) {
+                let responseBuffer = RTCDataBuffer(data: data, isBinary: false)
+                dataChannel.sendData(responseBuffer)
+                print("💓 Keep-alive pong sent")
+            }
+        }
     }
 }
 
